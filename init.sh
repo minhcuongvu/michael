@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-# init.sh - Set up aliases + git-aware prompt
+# init.sh - Set up shell environment (bash/zsh, wezterm)
+# Works on Windows (MSYS2/UCRT64) and Linux
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# ── snippets ──────────────────────────────────────────────────────────────────
 
 ALIASES_SNIPPET='
 # aliases
@@ -23,19 +28,21 @@ PROMPT_COMMAND='"'"'_git_prompt'"'"'
 export PS1='"'"'\[\e[32m\]\u@\h \[\e[33m\]\w\[\e[36m\]${GIT_INFO}\[\e[0m\]\n\$ '"'"'
 '
 
+# ── bashrc / zshrc ────────────────────────────────────────────────────────────
+
 add_to_rc() {
     local rc="$1"
-    [[ ! -f "$rc" ]] && return
+    [[ ! -f "$rc" ]] && touch "$rc"
 
     if grep -q "alias z=" "$rc" || grep -q "alias l=" "$rc"; then
-        echo "aliases already exist in $rc"
+        echo "aliases already in $rc"
     else
         printf '%s\n' "$ALIASES_SNIPPET" >> "$rc"
         echo "Added aliases to $rc"
     fi
 
     if grep -q "_git_prompt" "$rc"; then
-        echo "git prompt already exists in $rc"
+        echo "git prompt already in $rc"
     else
         printf '%s\n' "$GIT_PROMPT_SNIPPET" >> "$rc"
         echo "Added git prompt to $rc"
@@ -43,6 +50,37 @@ add_to_rc() {
 }
 
 add_to_rc "$HOME/.bashrc"
-add_to_rc "$HOME/.zshrc"
+[[ -f "$HOME/.zshrc" ]] && add_to_rc "$HOME/.zshrc"
+
+# ── wezterm ───────────────────────────────────────────────────────────────────
+
+link_wezterm() {
+    local src="$SCRIPT_DIR/wezterm.lua"
+    local dst
+
+    if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
+        # Windows (MSYS2) — convert to Windows path for symlink
+        dst="$(cygpath -u "$USERPROFILE")/.wezterm.lua"
+    else
+        dst="$HOME/.wezterm.lua"
+    fi
+
+    if [[ ! -f "$src" ]]; then
+        echo "wezterm.lua not found in repo — skipping"
+        return
+    fi
+
+    if [[ -L "$dst" ]]; then
+        echo "wezterm symlink already exists at $dst"
+    elif [[ -f "$dst" ]]; then
+        echo "wezterm config exists at $dst (not a symlink — skipping)"
+        echo "  remove it and re-run to link from repo"
+    else
+        ln -s "$src" "$dst"
+        echo "Linked $dst -> $src"
+    fi
+}
+
+link_wezterm
 
 echo "Done. Restart your shell or run: source ~/.bashrc"
