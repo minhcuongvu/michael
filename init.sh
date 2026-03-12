@@ -93,4 +93,37 @@ link_wezterm() {
 
 link_wezterm
 
+# ── zellij ───────────────────────────────────────────────────────────────────
+
+link_zellij() {
+    local src="$SCRIPT_DIR/config.kdl"
+    local dst
+
+    if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
+        # MSYS2: zellij reads from Windows home, not /home/User
+        dst="$(cygpath -u "$USERPROFILE")/.config/zellij/config.kdl"
+    else
+        dst="$HOME/.config/zellij/config.kdl"
+    fi
+
+    if [[ ! -f "$src" ]]; then
+        echo "config.kdl not found in repo — skipping zellij"
+        return
+    fi
+
+    mkdir -p "$(dirname "$dst")"
+
+    if [[ -L "$dst" ]]; then
+        echo "zellij symlink already exists at $dst"
+    elif [[ -f "$dst" ]]; then
+        echo "zellij config exists at $dst (not a symlink — skipping)"
+        echo "  remove it and re-run to link from repo"
+    else
+        ln -s "$src" "$dst"
+        echo "Linked $dst -> $src"
+    fi
+}
+
+link_zellij
+
 echo "Done. Restart your shell or run: source ~/.bashrc"
