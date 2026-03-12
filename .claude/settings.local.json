@@ -7,7 +7,8 @@
       "Bash(echo $HOME)",
       "Read(//c/msys64/ucrt64/etc//**)",
       "Bash(echo \"HOME=$HOME\")",
-      "Read(//c/Dev/michael/$HOME/**)"
+      "Read(//c/Dev/michael/$HOME/**)",
+      "Read(//c/msys64/home/Michael/**)"
     ]
   }
 }
