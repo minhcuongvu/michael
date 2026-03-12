@@ -1,32 +1,36 @@
 #!/usr/bin/env bash
-# init.sh - Set up z alias for zellij + git-aware prompt
+# init.sh - Set up aliases + git-aware prompt
 
-# git-prompt.sh ships with git; path varies by distro
+ALIASES_SNIPPET='
+# aliases
+command -v zellij &>/dev/null && alias z='"'"'zellij'"'"'
+alias l='"'"'ls'"'"'
+'
+
 GIT_PROMPT_SNIPPET='
 # git prompt
-GIT_PS1_SHOWDIRTYSTATE=1
-for _gp in \
-    /usr/share/git/completion/git-prompt.sh \
-    /usr/share/git-core/contrib/completion/git-prompt.sh \
-    /etc/bash_completion.d/git-prompt; do
-    [[ -f "$_gp" ]] && { source "$_gp"; break; }
-done
-unset _gp
-export PS1='"'"'\[\e[32m\]\u@\h \[\e[33m\]\w\[\e[36m\]$(__git_ps1 " (%s)")\[\e[0m\]\n\$ '"'"'
+_git_prompt() {
+    local b dirty
+    b=$(git symbolic-ref --short HEAD 2>/dev/null) || { GIT_INFO='"'"''"'"'; return; }
+    [[ -n $(git status --porcelain 2>/dev/null) ]] && dirty='"'"' *'"'"'
+    GIT_INFO=" (${b}${dirty})"
+}
+PROMPT_COMMAND='"'"'_git_prompt'"'"'
+export PS1='"'"'\[\e[32m\]\u@\h \[\e[33m\]\w\[\e[36m\]${GIT_INFO}\[\e[0m\]\n\$ '"'"'
 '
 
 add_to_rc() {
     local rc="$1"
     [[ ! -f "$rc" ]] && return
 
-    if grep -q "alias z=" "$rc"; then
-        echo "z alias already exists in $rc"
+    if grep -q "alias z=" "$rc" || grep -q "alias l=" "$rc"; then
+        echo "aliases already exist in $rc"
     else
-        echo "alias z='zellij'" >> "$rc"
-        echo "Added z alias to $rc"
+        printf '%s\n' "$ALIASES_SNIPPET" >> "$rc"
+        echo "Added aliases to $rc"
     fi
 
-    if grep -q "GIT_PS1_SHOWDIRTYSTATE" "$rc"; then
+    if grep -q "_git_prompt" "$rc"; then
         echo "git prompt already exists in $rc"
     else
         printf '%s\n' "$GIT_PROMPT_SNIPPET" >> "$rc"
