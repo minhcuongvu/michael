@@ -34,14 +34,14 @@ add_to_rc() {
     local rc="$1"
     [[ ! -f "$rc" ]] && touch "$rc"
 
-    if grep -q "alias z=" "$rc" || grep -q "alias l=" "$rc"; then
+    if grep -q '^[^#]*alias z=' "$rc" || grep -q '^[^#]*alias l=' "$rc"; then
         echo "aliases already in $rc"
     else
         printf '%s\n' "$ALIASES_SNIPPET" >> "$rc"
         echo "Added aliases to $rc"
     fi
 
-    if grep -q "_git_prompt" "$rc"; then
+    if grep -q '^[^#]*_git_prompt' "$rc"; then
         echo "git prompt already in $rc"
     else
         printf '%s\n' "$GIT_PROMPT_SNIPPET" >> "$rc"
