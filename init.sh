@@ -3,7 +3,11 @@
 
 ALIASES_SNIPPET='
 # aliases
-command -v zellij &>/dev/null && alias z='"'"'zellij'"'"'
+if command -v zellij &>/dev/null; then
+    alias z='"'"'zellij'"'"'
+    source <(zellij setup --generate-completion bash)
+    complete -F _zellij z
+fi
 alias l='"'"'ls'"'"'
 '
 
