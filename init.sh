@@ -52,6 +52,16 @@ add_to_rc() {
 add_to_rc "$HOME/.bashrc"
 [[ -f "$HOME/.zshrc" ]] && add_to_rc "$HOME/.zshrc"
 
+# login shells (bash --login) source .bash_profile, not .bashrc
+# make sure .bash_profile sources .bashrc so our setup actually loads
+BASH_PROFILE="$HOME/.bash_profile"
+if [[ ! -f "$BASH_PROFILE" ]] || ! grep -q '\.bashrc' "$BASH_PROFILE"; then
+    printf '\n[[ -f ~/.bashrc ]] && source ~/.bashrc\n' >> "$BASH_PROFILE"
+    echo "Added .bashrc source to $BASH_PROFILE"
+else
+    echo ".bash_profile already sources .bashrc"
+fi
+
 # ── wezterm ───────────────────────────────────────────────────────────────────
 
 link_wezterm() {
