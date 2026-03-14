@@ -6,6 +6,7 @@ return {
   set_environment_variables = {
     MSYSTEM = 'UCRT64',
     CHERE_INVOKING = '1',
+    MSYS2_PATH_TYPE = 'inherit',
   },
   font_size = 8,
   line_height = 1.0,

@@ -6,16 +6,27 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ── snippets ──────────────────────────────────────────────────────────────────
 
-CARGO_PATH_SNIPPET='
-# cargo bin (Windows native path for MSYS2)
-if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
-    _cargo_bin="$(cygpath -u "$USERPROFILE")/.cargo/bin"
-else
-    _cargo_bin="$HOME/.cargo/bin"
-fi
-[[ -d "$_cargo_bin" ]] && export PATH="$_cargo_bin:$PATH"
-unset _cargo_bin
+CARGO_SNIPPET_UNIX='
+# cargo
+export PATH="$HOME/.cargo/bin:$PATH"
 '
+
+# On MSYS2/Windows, MSYS2 minimal PATH strips most Windows directories.
+# Add them back explicitly so tools work from any shell (WezTerm, Claude Code, etc).
+WIN_TOOLS_SNIPPET='
+# Windows tools (MSYS2 minimal PATH strips these)
+export PATH="/c/Users/$USER/.cargo/bin:$PATH"                    # cargo
+export PATH="/c/Program Files/Docker/Docker/resources/bin:$PATH" # Docker Desktop
+export PATH="/c/Program Files/Go/bin:$PATH"                      # Go
+export PATH="/c/Users/$USER/go/bin:$PATH"                        # Go GOPATH/bin
+export PATH="/c/Dev/opencode:$PATH"                              # opencode
+'
+
+if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
+    CARGO_SNIPPET="$WIN_TOOLS_SNIPPET"
+else
+    CARGO_SNIPPET="$CARGO_SNIPPET_UNIX"
+fi
 
 OPENCODE_SNIPPET='
 # opencode
@@ -30,6 +41,7 @@ if command -v zellij &>/dev/null; then
     complete -F _zellij z
 fi
 alias l='"'"'ls'"'"'
+if command -v mingw32-make &>/dev/null; then alias make='"'"'mingw32-make'"'"'; fi
 '
 
 FNM_SNIPPET='
@@ -57,11 +69,11 @@ add_to_rc() {
     local rc="$1"
     [[ ! -f "$rc" ]] && touch "$rc"
 
-    if grep -q '^[^#]*_cargo_bin' "$rc"; then
-        echo "cargo PATH already in $rc"
+    if grep -q 'cargo/bin' "$rc"; then
+        echo "tool PATHs already in $rc"
     else
-        printf '%s\n' "$CARGO_PATH_SNIPPET" >> "$rc"
-        echo "Added cargo PATH to $rc"
+        printf '%s\n' "$CARGO_SNIPPET" >> "$rc"
+        echo "Added tool PATHs to $rc"
     fi
 
     if grep -q '^[^#]*\.opencode/bin' "$rc"; then
