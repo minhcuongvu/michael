@@ -6,6 +6,24 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ── snippets ──────────────────────────────────────────────────────────────────
 
+CARGO_SNIPPET_UNIX='
+# cargo
+export PATH="$HOME/.cargo/bin:$PATH"
+'
+
+# On MSYS2, $HOME may be /home/User but cargo installs to the Windows
+# profile (C:/Users/User).  Use /c/Users/$USER so the path is always correct.
+CARGO_SNIPPET_WIN='
+# cargo (resolve Windows home — cargo installs there, not in MSYS2 home)
+export PATH="/c/Users/$USER/.cargo/bin:$PATH"
+'
+
+if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
+    CARGO_SNIPPET="$CARGO_SNIPPET_WIN"
+else
+    CARGO_SNIPPET="$CARGO_SNIPPET_UNIX"
+fi
+
 ALIASES_SNIPPET='
 # aliases
 if command -v zellij &>/dev/null; then
@@ -34,6 +52,13 @@ add_to_rc() {
     local rc="$1"
     [[ ! -f "$rc" ]] && touch "$rc"
 
+    if grep -q 'cargo/bin' "$rc"; then
+        echo "cargo PATH already in $rc"
+    else
+        printf '%s\n' "$CARGO_SNIPPET" >> "$rc"
+        echo "Added cargo PATH to $rc"
+    fi
+
     if grep -q '^[^#]*alias z=' "$rc" || grep -q '^[^#]*alias l=' "$rc"; then
         echo "aliases already in $rc"
     else
@@ -49,17 +74,34 @@ add_to_rc() {
     fi
 }
 
-add_to_rc "$HOME/.bashrc"
-[[ -f "$HOME/.zshrc" ]] && add_to_rc "$HOME/.zshrc"
+setup_bash() {
+    local home="$1"
 
-# login shells (bash --login) source .bash_profile, not .bashrc
-# make sure .bash_profile sources .bashrc so our setup actually loads
-BASH_PROFILE="$HOME/.bash_profile"
-if [[ ! -f "$BASH_PROFILE" ]] || ! grep -q '\.bashrc' "$BASH_PROFILE"; then
-    printf '\n[[ -f ~/.bashrc ]] && source ~/.bashrc\n' >> "$BASH_PROFILE"
-    echo "Added .bashrc source to $BASH_PROFILE"
-else
-    echo ".bash_profile already sources .bashrc"
+    add_to_rc "$home/.bashrc"
+    [[ -f "$home/.zshrc" ]] && add_to_rc "$home/.zshrc"
+
+    # login shells (bash --login) source .bash_profile, not .bashrc
+    # make sure .bash_profile sources .bashrc so our setup actually loads
+    local bp="$home/.bash_profile"
+    if [[ ! -f "$bp" ]] || ! grep -q '\.bashrc' "$bp"; then
+        printf '\n[[ -f ~/.bashrc ]] && source ~/.bashrc\n' >> "$bp"
+        echo "Added .bashrc source to $bp"
+    else
+        echo ".bash_profile already sources .bashrc"
+    fi
+}
+
+setup_bash "$HOME"
+
+# On MSYS2/UCRT64, wezterm uses CHERE_INVOKING=1 which sets HOME to the
+# Windows user profile instead of the MSYS2 home. Write to both so the
+# shell config works regardless of how bash is launched.
+if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
+    WIN_HOME="$(cygpath -u "$USERPROFILE")"
+    if [[ "$WIN_HOME" != "$HOME" ]]; then
+        echo "--- Windows home ($WIN_HOME) differs from MSYS2 home ($HOME) ---"
+        setup_bash "$WIN_HOME"
+    fi
 fi
 
 # ── wezterm ───────────────────────────────────────────────────────────────────
