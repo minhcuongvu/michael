@@ -6,23 +6,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ── snippets ──────────────────────────────────────────────────────────────────
 
-CARGO_SNIPPET_UNIX='
-# cargo
-export PATH="$HOME/.cargo/bin:$PATH"
-'
-
-# On MSYS2, $HOME may be /home/User but cargo installs to the Windows
-# profile (C:/Users/User).  Use /c/Users/$USER so the path is always correct.
-CARGO_SNIPPET_WIN='
-# cargo (resolve Windows home — cargo installs there, not in MSYS2 home)
-export PATH="/c/Users/$USER/.cargo/bin:$PATH"
-'
-
-if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
-    CARGO_SNIPPET="$CARGO_SNIPPET_WIN"
+CARGO_PATH_SNIPPET='
+# cargo bin (Windows native path for MSYS2)
+if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
+    _cargo_bin="$(cygpath -u "$USERPROFILE")/.cargo/bin"
 else
-    CARGO_SNIPPET="$CARGO_SNIPPET_UNIX"
+    _cargo_bin="$HOME/.cargo/bin"
 fi
+[[ -d "$_cargo_bin" ]] && export PATH="$_cargo_bin:$PATH"
+unset _cargo_bin
+'
+
+OPENCODE_SNIPPET='
+# opencode
+[[ -d "$HOME/.opencode/bin" ]] && export PATH="$HOME/.opencode/bin:$PATH"
+'
 
 ALIASES_SNIPPET='
 # aliases
@@ -52,11 +50,18 @@ add_to_rc() {
     local rc="$1"
     [[ ! -f "$rc" ]] && touch "$rc"
 
-    if grep -q 'cargo/bin' "$rc"; then
+    if grep -q '^[^#]*_cargo_bin' "$rc"; then
         echo "cargo PATH already in $rc"
     else
-        printf '%s\n' "$CARGO_SNIPPET" >> "$rc"
+        printf '%s\n' "$CARGO_PATH_SNIPPET" >> "$rc"
         echo "Added cargo PATH to $rc"
+    fi
+
+    if grep -q '^[^#]*\.opencode/bin' "$rc"; then
+        echo "opencode PATH already in $rc"
+    else
+        printf '%s\n' "$OPENCODE_SNIPPET" >> "$rc"
+        echo "Added opencode PATH to $rc"
     fi
 
     if grep -q '^[^#]*alias z=' "$rc" || grep -q '^[^#]*alias l=' "$rc"; then
@@ -141,12 +146,7 @@ link_zellij() {
     local src="$SCRIPT_DIR/config.kdl"
     local dst
 
-    if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
-        # MSYS2: zellij reads from Windows home, not /home/User
-        dst="$(cygpath -u "$USERPROFILE")/.config/zellij/config.kdl"
-    else
-        dst="$HOME/.config/zellij/config.kdl"
-    fi
+    dst="$HOME/.config/zellij/config.kdl"
 
     if [[ ! -f "$src" ]]; then
         echo "config.kdl not found in repo — skipping zellij"
@@ -167,5 +167,72 @@ link_zellij() {
 }
 
 link_zellij
+
+# ── neovim ──────────────────────────────────────────────────────────────────
+
+link_nvim() {
+    local src="/c/dev/cloud-nvim"
+    local dst
+
+    if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
+        dst="$(cygpath -u "$USERPROFILE")/AppData/Local/nvim"
+    else
+        dst="$HOME/.config/nvim"
+    fi
+
+    if [[ ! -d "$src" ]]; then
+        echo "cloud-nvim not found at $src — skipping"
+        return
+    fi
+
+    if [[ -L "$dst" ]]; then
+        echo "nvim symlink already exists at $dst"
+    elif [[ -d "$dst" ]]; then
+        echo "nvim config exists at $dst (not a symlink — skipping)"
+        echo "  remove it and re-run to link from repo"
+    else
+        mkdir -p "$(dirname "$dst")"
+        ln -s "$src" "$dst"
+        echo "Linked $dst -> $src"
+    fi
+}
+
+link_nvim
+
+# ── nvim plugin patches ─────────────────────────────────────────────────────
+
+patch_nvim_plugins() {
+    local nvim_data
+    if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
+        nvim_data="$(cygpath -u "$USERPROFILE")/AppData/Local/nvim-data"
+    else
+        nvim_data="${XDG_DATA_HOME:-$HOME/.local/share}/nvim"
+    fi
+
+    local target="$nvim_data/lazy/neo-tree.nvim/lua/neo-tree/git/ls-files.lua"
+    if [[ ! -f "$target" ]]; then
+        echo "neo-tree not installed — skipping patch"
+        return
+    fi
+
+    if grep -q 'assert(vim.v.shell_error == 0)' "$target"; then
+        sed -i 's/  assert(vim.v.shell_error == 0)/  if vim.v.shell_error ~= 0 then\n    return {}\n  end/' "$target"
+        echo "Patched neo-tree ls-files.lua (replaced assert with graceful return)"
+    else
+        echo "neo-tree ls-files.lua already patched"
+    fi
+
+    # Downgrade noisy git status warning to trace (fires on Unicode path failures)
+    local git_init="$nvim_data/lazy/neo-tree.nvim/lua/neo-tree/git/init.lua"
+    if [[ -f "$git_init" ]] && grep -q 'log.at.warn.format' "$git_init" && \
+       grep -q 'git status async process exited abnormally' "$git_init"; then
+        sed -i '/git status async process exited abnormally/{s/log.at.warn.format/log.at.trace.format/}' "$git_init"
+        echo "Patched neo-tree git/init.lua (downgraded async warn to trace)"
+    else
+        echo "neo-tree git/init.lua already patched (or not found)"
+    fi
+}
+
+patch_nvim_plugins
 
 echo "Done. Restart your shell or run: source ~/.bashrc"

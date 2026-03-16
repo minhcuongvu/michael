@@ -1,0 +1,12 @@
+--- a/lua/neo-tree/git/ls-files.lua
++++ b/lua/neo-tree/git/ls-files.lua
+@@ -26,7 +26,9 @@
+ local ls_files_sync = function(worktree_root, git_args)
+   local output = vim.fn.system({ "git", unpack(git_args) })
+-  assert(vim.v.shell_error == 0)
++  if vim.v.shell_error ~= 0 then
++    return {}
++  end
+   local iter = utils.gsplit_plain(output, "\001")
+
+   return git_parser.parse_ls_files_output(worktree_root, iter)
