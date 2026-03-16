@@ -32,6 +32,13 @@ fi
 alias l='"'"'ls'"'"'
 '
 
+FNM_SNIPPET='
+# fnm (Fast Node Manager)
+if command -v fnm &>/dev/null; then
+    eval "$(fnm env)"
+fi
+'
+
 GIT_PROMPT_SNIPPET='
 # git prompt
 _git_prompt() {
@@ -69,6 +76,13 @@ add_to_rc() {
     else
         printf '%s\n' "$ALIASES_SNIPPET" >> "$rc"
         echo "Added aliases to $rc"
+    fi
+
+    if grep -q '^[^#]*fnm env' "$rc"; then
+        echo "fnm already in $rc"
+    else
+        printf '%s\n' "$FNM_SNIPPET" >> "$rc"
+        echo "Added fnm to $rc"
     fi
 
     if grep -q '^[^#]*_git_prompt' "$rc"; then
