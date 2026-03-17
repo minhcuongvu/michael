@@ -143,6 +143,31 @@ Key vars set by WezTerm/init.sh:
 - `CHERE_INVOKING=1` - Preserves current directory
 - `MSYS2_PATH_TYPE=inherit` - Inherits Windows PATH
 
+## Installing Packages
+
+**When installing packages on Windows, ALWAYS use the UCRT64 prefix:**
+
+```bash
+# CORRECT - installs UCRT64 native binary
+pacman -S mingw-w64-ucrt-x86_64-ripgrep
+pacman -S mingw-w64-ucrt-x86_64-jq
+
+# WRONG - installs MSYS2-native version (may not work)
+pacman -S ripgrep
+pacman -S jq
+```
+
+**Package naming:** `mingw-w64-ucrt-x86_64-<package>`
+
+Examples installed by init.sh:
+- `mingw-w64-ucrt-x86_64-ripgrep`
+- `mingw-w64-ucrt-x86_64-jq`
+
+**To search for packages:**
+```bash
+pacman -Ss <search-term>
+```
+
 ## What NOT to do
 
 ```bash

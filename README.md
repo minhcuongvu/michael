@@ -63,6 +63,34 @@ Restart your shell (or `source ~/.bashrc`) and you're done.
 - Leader-key keybinds with vim-style navigation (h/j/k/l)
 - tmux compatibility mode (`Ctrl+b`)
 
+## Installing Packages
+
+**On Windows (MSYS2/UCRT64):**
+
+Use `pacman` with the UCRT64 prefix for native Windows binaries:
+
+```bash
+# Install packages for UCRT64 toolchain
+pacman -S mingw-w64-ucrt-x86_64-<package-name>
+
+# Examples installed by init.sh:
+pacman -S mingw-w64-ucrt-x86_64-ripgrep
+pacman -S mingw-w64-ucrt-x86_64-jq
+```
+
+**DO NOT use bare package names** (like `pacman -S ripgrep`) - those install MSYS2-native versions that may not work correctly with the UCRT64 toolchain.
+
+**On Linux:**
+
+Use your distribution's package manager:
+```bash
+# Debian/Ubuntu
+sudo apt install ripgrep jq
+
+# Arch
+sudo pacman -S ripgrep jq
+```
+
 ## Platform Notes
 
 **Windows (MSYS2/UCRT64):** Primary target. WezTerm launches MSYS2 bash as login shell with UCRT64 toolchain. `init.sh` handles the dual-home quirk and adds Windows tool paths.
