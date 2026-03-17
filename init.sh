@@ -122,6 +122,31 @@ setup_bash() {
     fi
 }
 
+# ── MSYS2 packages ────────────────────────────────────────────────────────────
+
+install_msys2_packages() {
+    local packages=(
+        mingw-w64-ucrt-x86_64-ripgrep
+        mingw-w64-ucrt-x86_64-jq
+    )
+    local to_install=()
+    for pkg in "${packages[@]}"; do
+        if ! pacman -Qi "$pkg" &>/dev/null; then
+            to_install+=("$pkg")
+        fi
+    done
+    if [[ ${#to_install[@]} -gt 0 ]]; then
+        echo "Installing MSYS2 packages: ${to_install[*]}"
+        pacman -S --noconfirm "${to_install[@]}"
+    else
+        echo "MSYS2 packages already installed (ripgrep, jq)"
+    fi
+}
+
+if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
+    install_msys2_packages
+fi
+
 setup_bash "$HOME"
 
 # On MSYS2/UCRT64, wezterm uses CHERE_INVOKING=1 which sets HOME to the
