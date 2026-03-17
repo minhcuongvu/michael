@@ -34,7 +34,7 @@ This is a **Windows development environment** using MSYS2 with the UCRT64 toolch
 - Standard: `cargo`, `rustc`, `rustfmt`, `clippy`
 
 ### MSYS2 UCRT64 (in `/c/msys64/ucrt64/bin`)
-- `nvim` - Neovim
+- `nvim` - Neovim (lazy.nvim-based config, managed externally and linked by init.sh)
 - `rg` - ripgrep
 - `jq` - JSON processor
 - `gcc`, `g++` - MinGW-w64 compiler
@@ -176,6 +176,23 @@ cd /c/Users/Michael
 - Use `cygpath -w` to convert Unix→Windows
 - Use `cygpath -u` to convert Windows→Unix
 
+## Neovim Configuration
+
+Neovim is set up as a separate configuration repository. `init.sh` will:
+1. Link the external nvim config to `~/AppData/Local/nvim` (Windows) or `~/.config/nvim` (Linux)
+2. Apply patches to neo-tree.nvim for better Windows compatibility
+
+**To open nvim:**
+```bash
+nvim
+# or
+nvim filename.txt
+```
+
+**If nvim config is not linked:**
+- Ensure the external nvim repository exists
+- Run `bash init.sh` from this repo to create the symlink
+
 ## Re-running Setup
 
 If environment seems broken:
@@ -185,4 +202,4 @@ bash init.sh
 source ~/.bashrc
 ```
 
-This re-links configs and ensures PATH is correct.
+This re-links configs (including nvim) and ensures PATH is correct.

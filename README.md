@@ -11,6 +11,10 @@ Personal dotfiles and shell environment setup for Windows (MSYS2/UCRT64) and Lin
 | `config.kdl` | Zellij multiplexer config (keybindings, tokyo-night theme, compact layout) |
 | `skill.md` | AI agent skill for this environment (paths, tools, conventions) |
 
+## Neovim Setup
+
+Neovim is configured with a separate repository. `init.sh` automatically links it to your nvim config directory and applies necessary patches for neo-tree.nvim.
+
 ## Quick Start
 
 ```bash
@@ -42,8 +46,9 @@ Restart your shell (or `source ~/.bashrc`) and you're done.
    - `/home/User` (MSYS2 home)
    - `/c/Users/User` (Windows home, used with `CHERE_INVOKING=1`)
 
-6. **Symlinks** — links `wezterm.lua`, `config.kdl`, and `skill.md` to their expected locations
+6. **Symlinks** — links `wezterm.lua`, `config.kdl`, `skill.md`, and external nvim config to their expected locations
 7. **AI skill** — installs `skill.md` to `~/.config/opencode/skills/michael-environment/`
+8. **Neovim** — links nvim configuration and applies neo-tree patches for Windows compatibility
 
 ## WezTerm Config
 
