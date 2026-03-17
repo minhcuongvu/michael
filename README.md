@@ -9,6 +9,7 @@ Personal dotfiles and shell environment setup for Windows (MSYS2/UCRT64) and Lin
 | `init.sh` | Bootstrap script — sets up shell config, symlinks, and PATH |
 | `wezterm.lua` | WezTerm terminal config (font, padding, MSYS2/UCRT64 shell) |
 | `config.kdl` | Zellij multiplexer config (keybindings, tokyo-night theme, compact layout) |
+| `skill.md` | AI agent skill for this environment (paths, tools, conventions) |
 
 ## Quick Start
 
@@ -41,7 +42,8 @@ Restart your shell (or `source ~/.bashrc`) and you're done.
    - `/home/User` (MSYS2 home)
    - `/c/Users/User` (Windows home, used with `CHERE_INVOKING=1`)
 
-6. **Symlinks** — links `wezterm.lua` and `config.kdl` to their expected locations
+6. **Symlinks** — links `wezterm.lua`, `config.kdl`, and `skill.md` to their expected locations
+7. **AI skill** — installs `skill.md` to `~/.config/opencode/skills/michael-environment/`
 
 ## WezTerm Config
 
@@ -61,3 +63,21 @@ Restart your shell (or `source ~/.bashrc`) and you're done.
 **Windows (MSYS2/UCRT64):** Primary target. WezTerm launches MSYS2 bash as login shell with UCRT64 toolchain. `init.sh` handles the dual-home quirk and adds Windows tool paths.
 
 **Linux:** Supported. `init.sh` detects the OS and skips Windows-specific PATH entries. Cargo, aliases, git prompt, and symlinks work the same way.
+
+## AI Agent Skill
+
+The `skill.md` file contains environment documentation for AI assistants (opencode, Claude Code, etc.). `init.sh` automatically links it to:
+
+```
+~/.config/opencode/skills/michael-environment/SKILL.md
+```
+
+This skill teaches AI agents:
+- Correct path handling (Unix-style in MSYS2)
+- Available tools and their locations
+- Aliases (`z` → `zellij`, `make` → `mingw32-make`)
+- Git workflow (use UCRT64 git)
+- Zellij keybindings
+- Common pitfalls to avoid
+
+The skill follows the standard skill format used by opencode and can be loaded automatically when working in this environment.

@@ -286,4 +286,43 @@ patch_nvim_plugins() {
 
 patch_nvim_plugins
 
+# ── opencode skills ───────────────────────────────────────────────────────────
+
+install_opencode_skill() {
+    local src="$SCRIPT_DIR/skill.md"
+    local dst
+
+    if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
+        dst="$(cygpath -u "$USERPROFILE")/.config/opencode/skills/michael-environment/SKILL.md"
+    else
+        dst="$HOME/.config/opencode/skills/michael-environment/SKILL.md"
+    fi
+
+    if [[ ! -f "$src" ]]; then
+        echo "skill.md not found in repo — skipping"
+        return
+    fi
+
+    mkdir -p "$(dirname "$dst")"
+
+    if [[ -L "$dst" ]]; then
+        rm "$dst"
+        ln -s "$src" "$dst"
+        echo "Updated skill symlink at $dst"
+    elif [[ -f "$dst" ]]; then
+        if [[ ! "$dst" -ef "$src" ]]; then
+            mv "$dst" "$dst.bak"
+            ln -s "$src" "$dst"
+            echo "Replaced skill file with symlink at $dst (backup at $dst.bak)"
+        else
+            echo "Skill already linked at $dst"
+        fi
+    else
+        ln -s "$src" "$dst"
+        echo "Linked skill $dst -> $src"
+    fi
+}
+
+install_opencode_skill
+
 echo "Done. Restart your shell or run: source ~/.bashrc"
