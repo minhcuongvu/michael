@@ -51,6 +51,13 @@ if command -v fnm &>/dev/null; then
 fi
 '
 
+FZF_SNIPPET='
+# fzf (fuzzy finder)
+if command -v fzf &>/dev/null; then
+    eval "$(fzf --bash)"
+fi
+'
+
 GIT_PROMPT_SNIPPET='
 # git prompt
 _git_prompt() {
@@ -97,6 +104,13 @@ add_to_rc() {
         echo "Added fnm to $rc"
     fi
 
+    if grep -q '^[^#]*fzf --bash' "$rc"; then
+        echo "fzf already in $rc"
+    else
+        printf '%s\n' "$FZF_SNIPPET" >> "$rc"
+        echo "Added fzf to $rc"
+    fi
+
     if grep -q '^[^#]*_git_prompt' "$rc"; then
         echo "git prompt already in $rc"
     else
@@ -128,6 +142,7 @@ install_msys2_packages() {
     local packages=(
         mingw-w64-ucrt-x86_64-ripgrep
         mingw-w64-ucrt-x86_64-jq
+        mingw-w64-ucrt-x86_64-fzf
     )
     local to_install=()
     for pkg in "${packages[@]}"; do

@@ -37,6 +37,7 @@ This is a **Windows development environment** using MSYS2 with the UCRT64 toolch
 - `nvim` - Neovim (lazy.nvim-based config, managed externally and linked by init.sh)
 - `rg` - ripgrep
 - `jq` - JSON processor
+- `fzf` - Fuzzy finder with shell key bindings
 - `gcc`, `g++` - MinGW-w64 compiler
 - `make` (actually `mingw32-make`)
 - `git` - Git for UCRT64
