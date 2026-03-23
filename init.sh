@@ -153,6 +153,7 @@ install_msys2_packages() {
         mingw-w64-ucrt-x86_64-ripgrep
         mingw-w64-ucrt-x86_64-jq
         mingw-w64-ucrt-x86_64-fzf
+        mingw-w64-ucrt-x86_64-git-subtree
     )
     local to_install=()
     for pkg in "${packages[@]}"; do
@@ -162,7 +163,7 @@ install_msys2_packages() {
         echo "Installing MSYS2 packages: ${to_install[*]}"
         pacman -S --noconfirm "${to_install[@]}"
     else
-        echo "MSYS2 packages already installed (ripgrep, jq, fzf)"
+        echo "MSYS2 packages already installed (ripgrep, jq, fzf, git-extra)"
     fi
 }
 
