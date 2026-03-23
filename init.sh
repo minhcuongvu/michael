@@ -47,6 +47,19 @@ if command -v fzf &>/dev/null; then
 fi
 '
 
+CLAUDE_CODE_SNIPPET='
+# Claude Code (~/.local/bin — native binary, independent of Node)
+# On MSYS2, claude install may use either $HOME or $USERPROFILE
+if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
+    for _d in "$HOME/.local/bin" "$(cygpath -u "$USERPROFILE")/.local/bin"; do
+        [[ -d "$_d" ]] && case ":$PATH:" in *:"$_d":*) ;; *) export PATH="$_d:$PATH" ;; esac
+    done
+    unset _d
+else
+    [[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
+fi
+'
+
 GIT_PROMPT_SNIPPET='
 # git prompt
 _git_prompt() {
@@ -98,6 +111,13 @@ add_to_rc() {
     else
         printf '%s\n' "$FZF_SNIPPET" >> "$rc"
         echo "Added fzf to $rc"
+    fi
+
+    if grep -q '^[^#]*_claude_bin' "$rc"; then
+        echo "Claude Code PATH already in $rc"
+    else
+        printf '%s\n' "$CLAUDE_CODE_SNIPPET" >> "$rc"
+        echo "Added Claude Code PATH to $rc"
     fi
 
     if grep -q '^[^#]*_git_prompt' "$rc"; then
@@ -328,5 +348,24 @@ install_opencode_skill() {
 }
 
 install_opencode_skill
+
+# ── claude code ─────────────────────────────────────────────────────────────
+
+install_claude_code() {
+    if command -v claude &>/dev/null; then
+        echo "Claude Code already installed ($(claude --version 2>/dev/null || echo 'unknown version'))"
+        return
+    fi
+
+    if ! command -v npm &>/dev/null; then
+        echo "npm not found — skipping Claude Code install (install Node/fnm first)"
+        return
+    fi
+
+    echo "Installing Claude Code..."
+    npm install -g @anthropic-ai/claude-code && claude install
+}
+
+install_claude_code
 
 echo "Done. Restart your shell or run: source ~/.bashrc"
