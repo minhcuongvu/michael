@@ -1,10 +1,53 @@
 #!/usr/bin/env bash
-# init.sh - Set up shell environment (bash/zsh, wezterm)
+# init.sh — set up shell environment (bash, wezterm, zellij, nvim)
 # Works on Windows (MSYS2/UCRT64) and Linux
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# ── snippets ──────────────────────────────────────────────────────────────────
+# ── helpers ──────────────────────────────────────────────────────────────────
+
+is_windows() {
+    [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "${MSYSTEM:-}" ]]
+}
+
+win_home() { cygpath -u "$USERPROFILE"; }
+
+# Append a snippet to an rc file if the grep pattern isn't already present.
+#   ensure_snippet <rc_file> <label> <grep_pattern> <content>
+ensure_snippet() {
+    local rc="$1" label="$2" pattern="$3" content="$4"
+    if grep -q "^[^#]*$pattern" "$rc"; then
+        echo "$label already in $rc"
+    else
+        printf '%s\n' "$content" >> "$rc"
+        echo "Added $label to $rc"
+    fi
+}
+
+# Create a symlink, skipping if the target already exists.
+#   link_config <src> <dst> <name>
+link_config() {
+    local src="$1" dst="$2" name="$3"
+
+    if [[ ! -e "$src" ]]; then
+        echo "$name not found at $src — skipping"
+        return
+    fi
+
+    mkdir -p "$(dirname "$dst")"
+
+    if [[ -L "$dst" ]]; then
+        echo "$name symlink already exists at $dst"
+    elif [[ -e "$dst" ]]; then
+        echo "$name config exists at $dst (not a symlink — skipping)"
+        echo "  remove it and re-run to link from repo"
+    else
+        ln -s "$src" "$dst"
+        echo "Linked $dst -> $src"
+    fi
+}
+
+# ── shell snippets ───────────────────────────────────────────────────────────
 
 CARGO_PATH_SNIPPET='
 # cargo bin (Windows native path for MSYS2)
@@ -72,60 +115,19 @@ PROMPT_COMMAND='"'"'_git_prompt'"'"'
 export PS1='"'"'\[\e[32m\]\u@\h \[\e[33m\]\w\[\e[36m\]${GIT_INFO}\[\e[0m\]\n\$ '"'"'
 '
 
-# ── bashrc / zshrc ────────────────────────────────────────────────────────────
+# ── bashrc / zshrc ───────────────────────────────────────────────────────────
 
 add_to_rc() {
     local rc="$1"
     [[ ! -f "$rc" ]] && touch "$rc"
 
-    if grep -q '^[^#]*_cargo_bin' "$rc"; then
-        echo "cargo PATH already in $rc"
-    else
-        printf '%s\n' "$CARGO_PATH_SNIPPET" >> "$rc"
-        echo "Added cargo PATH to $rc"
-    fi
-
-    if grep -q '^[^#]*\.opencode/bin' "$rc"; then
-        echo "opencode PATH already in $rc"
-    else
-        printf '%s\n' "$OPENCODE_SNIPPET" >> "$rc"
-        echo "Added opencode PATH to $rc"
-    fi
-
-    if grep -q '^[^#]*alias z=' "$rc" || grep -q '^[^#]*alias l=' "$rc"; then
-        echo "aliases already in $rc"
-    else
-        printf '%s\n' "$ALIASES_SNIPPET" >> "$rc"
-        echo "Added aliases to $rc"
-    fi
-
-    if grep -q '^[^#]*fnm env' "$rc"; then
-        echo "fnm already in $rc"
-    else
-        printf '%s\n' "$FNM_SNIPPET" >> "$rc"
-        echo "Added fnm to $rc"
-    fi
-
-    if grep -q '^[^#]*fzf --bash' "$rc"; then
-        echo "fzf already in $rc"
-    else
-        printf '%s\n' "$FZF_SNIPPET" >> "$rc"
-        echo "Added fzf to $rc"
-    fi
-
-    if grep -q '^[^#]*_claude_bin' "$rc"; then
-        echo "Claude Code PATH already in $rc"
-    else
-        printf '%s\n' "$CLAUDE_CODE_SNIPPET" >> "$rc"
-        echo "Added Claude Code PATH to $rc"
-    fi
-
-    if grep -q '^[^#]*_git_prompt' "$rc"; then
-        echo "git prompt already in $rc"
-    else
-        printf '%s\n' "$GIT_PROMPT_SNIPPET" >> "$rc"
-        echo "Added git prompt to $rc"
-    fi
+    ensure_snippet "$rc" "cargo PATH"       '_cargo_bin'     "$CARGO_PATH_SNIPPET"
+    ensure_snippet "$rc" "opencode PATH"    '\.opencode/bin' "$OPENCODE_SNIPPET"
+    ensure_snippet "$rc" "aliases"          'alias l='       "$ALIASES_SNIPPET"
+    ensure_snippet "$rc" "fnm"              'fnm env'        "$FNM_SNIPPET"
+    ensure_snippet "$rc" "fzf"              'fzf --bash'     "$FZF_SNIPPET"
+    ensure_snippet "$rc" "Claude Code PATH" '\.local/bin'    "$CLAUDE_CODE_SNIPPET"
+    ensure_snippet "$rc" "git prompt"       '_git_prompt'    "$GIT_PROMPT_SNIPPET"
 }
 
 setup_bash() {
@@ -135,7 +137,6 @@ setup_bash() {
     [[ -f "$home/.zshrc" ]] && add_to_rc "$home/.zshrc"
 
     # login shells (bash --login) source .bash_profile, not .bashrc
-    # make sure .bash_profile sources .bashrc so our setup actually loads
     local bp="$home/.bash_profile"
     if [[ ! -f "$bp" ]] || ! grep -q '\.bashrc' "$bp"; then
         printf '\n[[ -f ~/.bashrc ]] && source ~/.bashrc\n' >> "$bp"
@@ -145,7 +146,7 @@ setup_bash() {
     fi
 }
 
-# ── MSYS2 packages ────────────────────────────────────────────────────────────
+# ── MSYS2 packages ──────────────────────────────────────────────────────────
 
 install_msys2_packages() {
     local packages=(
@@ -155,131 +156,22 @@ install_msys2_packages() {
     )
     local to_install=()
     for pkg in "${packages[@]}"; do
-        if ! pacman -Qi "$pkg" &>/dev/null; then
-            to_install+=("$pkg")
-        fi
+        pacman -Qi "$pkg" &>/dev/null || to_install+=("$pkg")
     done
-    if [[ ${#to_install[@]} -gt 0 ]]; then
+    if (( ${#to_install[@]} )); then
         echo "Installing MSYS2 packages: ${to_install[*]}"
         pacman -S --noconfirm "${to_install[@]}"
     else
-        echo "MSYS2 packages already installed (ripgrep, jq)"
+        echo "MSYS2 packages already installed (ripgrep, jq, fzf)"
     fi
 }
-
-if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
-    install_msys2_packages
-fi
-
-setup_bash "$HOME"
-
-# On MSYS2/UCRT64, wezterm uses CHERE_INVOKING=1 which sets HOME to the
-# Windows user profile instead of the MSYS2 home. Write to both so the
-# shell config works regardless of how bash is launched.
-if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
-    WIN_HOME="$(cygpath -u "$USERPROFILE")"
-    if [[ "$WIN_HOME" != "$HOME" ]]; then
-        echo "--- Windows home ($WIN_HOME) differs from MSYS2 home ($HOME) ---"
-        setup_bash "$WIN_HOME"
-    fi
-fi
-
-# ── wezterm ───────────────────────────────────────────────────────────────────
-
-link_wezterm() {
-    local src="$SCRIPT_DIR/wezterm.lua"
-    local dst
-
-    if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
-        # Windows (MSYS2) — convert to Windows path for symlink
-        dst="$(cygpath -u "$USERPROFILE")/.wezterm.lua"
-    else
-        dst="$HOME/.wezterm.lua"
-    fi
-
-    if [[ ! -f "$src" ]]; then
-        echo "wezterm.lua not found in repo — skipping"
-        return
-    fi
-
-    if [[ -L "$dst" ]]; then
-        echo "wezterm symlink already exists at $dst"
-    elif [[ -f "$dst" ]]; then
-        echo "wezterm config exists at $dst (not a symlink — skipping)"
-        echo "  remove it and re-run to link from repo"
-    else
-        ln -s "$src" "$dst"
-        echo "Linked $dst -> $src"
-    fi
-}
-
-link_wezterm
-
-# ── zellij ───────────────────────────────────────────────────────────────────
-
-link_zellij() {
-    local src="$SCRIPT_DIR/config.kdl"
-    local dst
-
-    dst="$HOME/.config/zellij/config.kdl"
-
-    if [[ ! -f "$src" ]]; then
-        echo "config.kdl not found in repo — skipping zellij"
-        return
-    fi
-
-    mkdir -p "$(dirname "$dst")"
-
-    if [[ -L "$dst" ]]; then
-        echo "zellij symlink already exists at $dst"
-    elif [[ -f "$dst" ]]; then
-        echo "zellij config exists at $dst (not a symlink — skipping)"
-        echo "  remove it and re-run to link from repo"
-    else
-        ln -s "$src" "$dst"
-        echo "Linked $dst -> $src"
-    fi
-}
-
-link_zellij
-
-# ── neovim ──────────────────────────────────────────────────────────────────
-
-link_nvim() {
-    local src="/c/dev/cloud-nvim"
-    local dst
-
-    if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
-        dst="$(cygpath -u "$USERPROFILE")/AppData/Local/nvim"
-    else
-        dst="$HOME/.config/nvim"
-    fi
-
-    if [[ ! -d "$src" ]]; then
-        echo "cloud-nvim not found at $src — skipping"
-        return
-    fi
-
-    if [[ -L "$dst" ]]; then
-        echo "nvim symlink already exists at $dst"
-    elif [[ -d "$dst" ]]; then
-        echo "nvim config exists at $dst (not a symlink — skipping)"
-        echo "  remove it and re-run to link from repo"
-    else
-        mkdir -p "$(dirname "$dst")"
-        ln -s "$src" "$dst"
-        echo "Linked $dst -> $src"
-    fi
-}
-
-link_nvim
 
 # ── nvim plugin patches ─────────────────────────────────────────────────────
 
 patch_nvim_plugins() {
     local nvim_data
-    if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
-        nvim_data="$(cygpath -u "$USERPROFILE")/AppData/Local/nvim-data"
+    if is_windows; then
+        nvim_data="$(win_home)/AppData/Local/nvim-data"
     else
         nvim_data="${XDG_DATA_HOME:-$HOME/.local/share}/nvim"
     fi
@@ -308,24 +200,18 @@ patch_nvim_plugins() {
     fi
 }
 
-patch_nvim_plugins
-
-# ── opencode skills ───────────────────────────────────────────────────────────
+# ── opencode skill ──────────────────────────────────────────────────────────
 
 install_opencode_skill() {
     local src="$SCRIPT_DIR/skill.md"
     local dst
-
-    if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "$MSYSTEM" ]]; then
-        dst="$(cygpath -u "$USERPROFILE")/.config/opencode/skills/michael-environment/SKILL.md"
+    if is_windows; then
+        dst="$(win_home)/.config/opencode/skills/michael-environment/SKILL.md"
     else
         dst="$HOME/.config/opencode/skills/michael-environment/SKILL.md"
     fi
 
-    if [[ ! -f "$src" ]]; then
-        echo "skill.md not found in repo — skipping"
-        return
-    fi
+    [[ ! -f "$src" ]] && { echo "skill.md not found in repo — skipping"; return; }
 
     mkdir -p "$(dirname "$dst")"
 
@@ -347,9 +233,7 @@ install_opencode_skill() {
     fi
 }
 
-install_opencode_skill
-
-# ── claude code ─────────────────────────────────────────────────────────────
+# ── Claude Code ─────────────────────────────────────────────────────────────
 
 install_claude_code() {
     if command -v claude &>/dev/null; then
@@ -366,6 +250,32 @@ install_claude_code() {
     npm install -g @anthropic-ai/claude-code && claude install
 }
 
+# ── main ─────────────────────────────────────────────────────────────────────
+
+is_windows && install_msys2_packages
+
+setup_bash "$HOME"
+
+if is_windows; then
+    WIN_HOME="$(win_home)"
+    if [[ "$WIN_HOME" != "$HOME" ]]; then
+        echo "--- Windows home ($WIN_HOME) differs from MSYS2 home ($HOME) ---"
+        setup_bash "$WIN_HOME"
+    fi
+fi
+
+# symlinks
+if is_windows; then
+    link_config "$SCRIPT_DIR/wezterm.lua" "$(win_home)/.wezterm.lua"       "wezterm"
+    link_config "/c/dev/cloud-nvim"       "$(win_home)/AppData/Local/nvim" "nvim"
+else
+    link_config "$SCRIPT_DIR/wezterm.lua" "$HOME/.wezterm.lua" "wezterm"
+    link_config "/c/dev/cloud-nvim"       "$HOME/.config/nvim" "nvim"
+fi
+link_config "$SCRIPT_DIR/config.kdl" "$HOME/.config/zellij/config.kdl" "zellij"
+
+patch_nvim_plugins
+install_opencode_skill
 install_claude_code
 
 echo "Done. Restart your shell or run: source ~/.bashrc"
