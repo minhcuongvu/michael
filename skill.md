@@ -33,17 +33,25 @@ This is a **Windows development environment** using MSYS2 with the UCRT64 toolch
 - `fnm` - Fast Node Manager (v1.39.0)
 - Standard: `cargo`, `rustc`, `rustfmt`, `clippy`
 
+### Claude Code (in `~/.local/bin`)
+- `claude` - Anthropic's AI coding assistant
+
 ### MSYS2 UCRT64 (in `/c/msys64/ucrt64/bin`)
 - `nvim` - Neovim (lazy.nvim-based config, managed externally and linked by init.sh)
 - `rg` - ripgrep
 - `jq` - JSON processor
 - `fzf` - Fuzzy finder with shell key bindings
-- `gcc`, `g++` - MinGW-w64 compiler
+- `gcc`, `g++` - MinGW-w64 compiler (UCRT64)
 - `make` (actually `mingw32-make`)
 - `git` - Git for UCRT64
 - `node`, `npm` - Node.js
 - `python`, `python3` - Python 3.14
 - `cmake`, `ninja` - Build tools
+
+### C/C++ Compiler for CGO
+- `gcc` (v15.2.0) - MinGW-w64 UCRT64 compiler at `/c/msys64/ucrt64/bin/gcc`
+- **CGO is enabled** - Go can compile C code: `CGO_ENABLED=1 go build`
+- Used by backend1 and other Go projects requiring CGO
 
 ### Aliases (defined in `.bashrc`)
 - `z` → `zellij` (with tab completion)
@@ -126,6 +134,20 @@ mingw32-make
 mkdir build && cd build
 cmake .. -G "MinGW Makefiles"
 make
+```
+
+### Building Go projects with CGO
+
+**backend1 requires CGO (C compiler):**
+```bash
+# CGO is automatically enabled with UCRT64 gcc
+go build ./...
+
+# Or explicitly enable CGO
+CGO_ENABLED=1 go build ./...
+
+# The C compiler is at:
+# /c/msys64/ucrt64/bin/gcc
 ```
 
 ### File operations
