@@ -65,6 +65,13 @@ OPENCODE_SNIPPET='
 [[ -d "$HOME/.opencode/bin" ]] && export PATH="$HOME/.opencode/bin:$PATH"
 '
 
+ZELLIJ_SNIPPET='
+# zellij config dir (Windows native binary looks in %APPDATA%, not ~/.config)
+if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
+    export ZELLIJ_CONFIG_DIR="$(cygpath -u "$USERPROFILE")/.config/zellij"
+fi
+'
+
 ALIASES_SNIPPET='
 # aliases
 if command -v zellij &>/dev/null; then
@@ -123,6 +130,7 @@ add_to_rc() {
 
     ensure_snippet "$rc" "cargo PATH"       '_cargo_bin'     "$CARGO_PATH_SNIPPET"
     ensure_snippet "$rc" "opencode PATH"    '\.opencode/bin' "$OPENCODE_SNIPPET"
+    ensure_snippet "$rc" "zellij config"    'ZELLIJ_CONFIG_DIR' "$ZELLIJ_SNIPPET"
     ensure_snippet "$rc" "aliases"          'alias l='       "$ALIASES_SNIPPET"
     ensure_snippet "$rc" "fnm"              'fnm env'        "$FNM_SNIPPET"
     ensure_snippet "$rc" "fzf"              'fzf --bash'     "$FZF_SNIPPET"
