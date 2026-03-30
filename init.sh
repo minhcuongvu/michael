@@ -106,6 +106,15 @@ if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
 fi
 '
 
+AZURE_CLI_SNIPPET='
+# Azure CLI (Windows installer)
+if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
+    _azure_cli_bin="/c/Program Files/Microsoft SDKs/Azure/CLI2/wbin"
+    [[ -d "$_azure_cli_bin" ]] && case ":$PATH:" in *:"$_azure_cli_bin":*) ;; *) export PATH="$_azure_cli_bin:$PATH" ;; esac
+    unset _azure_cli_bin
+fi
+'
+
 CLAUDE_CODE_SNIPPET='
 # Claude Code (~/.local/bin — native binary, independent of Node)
 # On MSYS2, claude install may use either $HOME or $USERPROFILE
@@ -144,6 +153,7 @@ add_to_rc() {
     ensure_snippet "$rc" "fnm"              'fnm env'        "$FNM_SNIPPET"
     ensure_snippet "$rc" "fzf"              'fzf --bash'     "$FZF_SNIPPET"
     ensure_snippet "$rc" "dotnet PATH"      '/c/Program Files/dotnet' "$DOTNET_SNIPPET"
+    ensure_snippet "$rc" "Azure CLI PATH"   '/c/Program Files/Microsoft SDKs/Azure/CLI2/wbin' "$AZURE_CLI_SNIPPET"
     ensure_snippet "$rc" "Claude Code PATH" '\.local/bin'    "$CLAUDE_CODE_SNIPPET"
     ensure_snippet "$rc" "git prompt"       '_git_prompt'    "$GIT_PROMPT_SNIPPET"
 }
