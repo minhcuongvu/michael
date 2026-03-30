@@ -97,6 +97,15 @@ if command -v fzf &>/dev/null; then
 fi
 '
 
+DOTNET_SNIPPET='
+# machine-wide .NET CLI
+if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
+    _dotnet_bin="/c/Program Files/dotnet"
+    [[ -d "$_dotnet_bin" ]] && case ":$PATH:" in *:"$_dotnet_bin":*) ;; *) export PATH="$_dotnet_bin:$PATH" ;; esac
+    unset _dotnet_bin
+fi
+'
+
 CLAUDE_CODE_SNIPPET='
 # Claude Code (~/.local/bin — native binary, independent of Node)
 # On MSYS2, claude install may use either $HOME or $USERPROFILE
@@ -134,6 +143,7 @@ add_to_rc() {
     ensure_snippet "$rc" "aliases"          'alias l='       "$ALIASES_SNIPPET"
     ensure_snippet "$rc" "fnm"              'fnm env'        "$FNM_SNIPPET"
     ensure_snippet "$rc" "fzf"              'fzf --bash'     "$FZF_SNIPPET"
+    ensure_snippet "$rc" "dotnet PATH"      '/c/Program Files/dotnet' "$DOTNET_SNIPPET"
     ensure_snippet "$rc" "Claude Code PATH" '\.local/bin'    "$CLAUDE_CODE_SNIPPET"
     ensure_snippet "$rc" "git prompt"       '_git_prompt'    "$GIT_PROMPT_SNIPPET"
 }
