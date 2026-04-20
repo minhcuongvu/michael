@@ -24,7 +24,7 @@ ensure_snippet() {
     fi
 }
 
-# Create a symlink, skipping if the target already exists.
+# Create a symlink (or junction on Windows), skipping if the target already exists.
 #   link_config <src> <dst> <name>
 link_config() {
     local src="$1" dst="$2" name="$3"
@@ -42,8 +42,28 @@ link_config() {
         echo "$name config exists at $dst (not a symlink — skipping)"
         echo "  remove it and re-run to link from repo"
     else
-        ln -s "$src" "$dst"
-        echo "Linked $dst -> $src"
+        # On Windows, use junction for directories (works without admin)
+        # For files, try native symlink (requires Dev Mode or admin)
+        if is_windows; then
+            local win_src="$(cygpath -w "$src")"
+            local win_dst="$(cygpath -w "$dst")"
+            if [[ -d "$src" ]]; then
+                cmd.exe //c "mklink /J $win_dst $win_src"
+                echo "Linked $dst -> $src (junction)"
+            else
+                # Try native Windows symlink (requires Developer Mode or admin)
+                if MSYS=winsymlinks:native ln -s "$src" "$dst" 2>/dev/null; then
+                    echo "Linked $dst -> $src"
+                else
+                    echo "WARNING: Could not create symlink for $name (enable Developer Mode or run as admin)"
+                    echo "  Copying file instead: $dst"
+                    cp "$src" "$dst"
+                fi
+            fi
+        else
+            ln -s "$src" "$dst"
+            echo "Linked $dst -> $src"
+        fi
     fi
 }
 
