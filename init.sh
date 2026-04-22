@@ -220,7 +220,8 @@ install_msys2_packages() {
 patch_nvim_plugins() {
     local nvim_data
     if is_windows; then
-        nvim_data="$(win_home)/AppData/Local/nvim-data"
+        # Use cloud-nvim-data as configured in the nvim setup
+        nvim_data="$(win_home)/AppData/Local/cloud-nvim-data"
     else
         nvim_data="${XDG_DATA_HOME:-$HOME/.local/share}/nvim"
     fi
@@ -238,15 +239,17 @@ patch_nvim_plugins() {
         echo "neo-tree ls-files.lua already patched"
     fi
 
-    # Downgrade noisy git status warning to trace (fires on Unicode path failures)
-    local git_init="$nvim_data/lazy/neo-tree.nvim/lua/neo-tree/git/init.lua"
-    if [[ -f "$git_init" ]] && grep -q 'log.at.warn.format' "$git_init" && \
-       grep -q 'git status async process exited abnormally' "$git_init"; then
-        sed -i '/git status async process exited abnormally/{s/log.at.warn.format/log.at.trace.format/}' "$git_init"
-        echo "Patched neo-tree git/init.lua (downgraded async warn to trace)"
-    else
-        echo "neo-tree git/init.lua already patched (or not found)"
-    fi
+    # NOTE: Disabled - this patch was causing syntax errors
+    # The sed replacement changes the API call incorrectly
+    # # Downgrade noisy git status warning to trace (fires on Unicode path failures)
+    # local git_init="$nvim_data/lazy/neo-tree.nvim/lua/neo-tree/git/init.lua"
+    # if [[ -f "$git_init" ]] && grep -q 'log.at.warn.format' "$git_init" && \
+    #    grep -q 'git status async process exited abnormally' "$git_init"; then
+    #     sed -i '/git status async process exited abnormally/{s/log.at.warn.format/log.at.trace.format/}' "$git_init"
+    #     echo "Patched neo-tree git/init.lua (downgraded async warn to trace)"
+    # else
+    #     echo "neo-tree git/init.lua already patched (or not found)"
+    # fi
 }
 
 # ── opencode skill ──────────────────────────────────────────────────────────
