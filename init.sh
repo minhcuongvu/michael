@@ -150,6 +150,50 @@ else
 fi
 '
 
+ZNUKE_SNIPPET='
+# znuke: clear all zellij sessions — live, exited, and zombie. Removes:
+#   1. Socket dirs under $TMP/zellij/ (where live-session sockets live; zellij
+#      lists a session as "active" purely from a file in this dir, so a stale
+#      file from a crashed shell makes a zombie that kill-session can'"'"'t reach
+#      — that produces `Os { code: 2, NotFound }` from kill-*).
+#   2. session_info dirs under %LOCALAPPDATA%/Zellij[ Contributors]/cache/
+#      (resurrectable/EXITED session layouts).
+# Use znuke instead of `zellij kill-all-sessions` when anything is stuck.
+znuke() {
+    command -v zellij >/dev/null || { echo "zellij not in PATH"; return 1; }
+    yes y 2>/dev/null | zellij kill-all-sessions   >/dev/null 2>&1
+    yes y 2>/dev/null | zellij delete-all-sessions >/dev/null 2>&1
+
+    # Socket dirs (live-session zombies). Zellij honors $TMP/$TMPDIR; on MSYS2
+    # this is usually /tmp (= /c/msys64/tmp), distinct from %LOCALAPPDATA%/Temp.
+    local _tmp_candidates=("${TMPDIR:-}" "${TMP:-}" "${TEMP:-}" /tmp /c/msys64/tmp)
+    if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
+        [[ -n "${LOCALAPPDATA:-}" ]] && _tmp_candidates+=("$(cygpath -u "$LOCALAPPDATA")/Temp")
+    fi
+    local _seen=" " _d
+    for _d in "${_tmp_candidates[@]}"; do
+        [[ -z "$_d" || "$_seen" == *" $_d "* ]] && continue
+        _seen+="$_d "
+        rm -rf "$_d/zellij/contract_version_"*"/" 2>/dev/null
+    done
+
+    # Resurrectable session layouts (Windows AppData; both org strings).
+    if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
+        local _u; _u="$(cygpath -u "${USERPROFILE:-}")"
+        rm -rf "$_u/AppData/Local/Zellij/cache"/*/session_info/* \
+               "$_u/AppData/Local/Zellij Contributors/Zellij/cache"/*/session_info/* \
+               2>/dev/null
+    fi
+
+    local remaining; remaining=$(zellij list-sessions 2>&1)
+    if [[ "$remaining" == *"No active"* || -z "$remaining" ]]; then
+        echo "znuke: all sessions cleared"
+    else
+        echo "znuke: still present:"; echo "$remaining"
+    fi
+}
+'
+
 GIT_PROMPT_SNIPPET='
 # git prompt
 _git_prompt() {
@@ -164,9 +208,28 @@ export PS1='"'"'\[\e[32m\]\u@\h \[\e[33m\]\w\[\e[36m\]${GIT_INFO}\[\e[0m\]\n\$ '
 
 # ── bashrc / zshrc ───────────────────────────────────────────────────────────
 
+remove_znuke_function() {
+    local rc="$1"
+    [[ -f "$rc" ]] || return 0
+    grep -q '^znuke()' "$rc" || return 0
+    # Strip the comment header (lines starting with `# znuke` until a blank line)
+    # and the function body (`znuke() { ... }` ending with a `}` at column 0).
+    awk '
+        /^# znuke:/ { in_hdr=1; next }
+        in_hdr && /^[[:space:]]*$/ { in_hdr=0; next }
+        in_hdr && /^#/ { next }
+        in_hdr { in_hdr=0 }
+        /^znuke\(\)/ { in_fn=1 }
+        in_fn { if ($0 ~ /^\}$/) { in_fn=0; next } else next }
+        { print }
+    ' "$rc" > "$rc.znuke.tmp" && mv "$rc.znuke.tmp" "$rc"
+}
+
 add_to_rc() {
     local rc="$1"
     [[ ! -f "$rc" ]] && touch "$rc"
+
+    remove_znuke_function "$rc"
 
     ensure_snippet "$rc" "cargo PATH"       '_cargo_bin'     "$CARGO_PATH_SNIPPET"
     ensure_snippet "$rc" "opencode PATH"    '\.opencode/bin' "$OPENCODE_SNIPPET"
@@ -178,6 +241,7 @@ add_to_rc() {
     ensure_snippet "$rc" "Azure CLI PATH"   '/c/Program Files/Microsoft SDKs/Azure/CLI2/wbin' "$AZURE_CLI_SNIPPET"
     ensure_snippet "$rc" "Claude Code PATH" '\.local/bin'    "$CLAUDE_CODE_SNIPPET"
     ensure_snippet "$rc" "git prompt"       '_git_prompt'    "$GIT_PROMPT_SNIPPET"
+    ensure_snippet "$rc" "znuke"            'znuke()'        "$ZNUKE_SNIPPET"
 }
 
 setup_bash() {
