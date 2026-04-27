@@ -2,7 +2,7 @@ local wezterm = require 'wezterm'
 
 return {
   default_prog = { 'C:/msys64/usr/bin/bash.exe', '--login' },
-  default_cwd = 'C:/Users/Michael',
+  default_cwd = wezterm.home_dir,
   set_environment_variables = {
     MSYSTEM = 'UCRT64',
     CHERE_INVOKING = '1',

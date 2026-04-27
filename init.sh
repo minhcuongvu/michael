@@ -51,12 +51,14 @@ link_config() {
                 cmd.exe //c "mklink /J $win_dst $win_src"
                 echo "Linked $dst -> $src (junction)"
             else
-                # Try native Windows symlink (requires Developer Mode or admin)
-                if MSYS=winsymlinks:native ln -s "$src" "$dst" 2>/dev/null; then
-                    echo "Linked $dst -> $src"
+                # For files: try a true native symlink via mklink (needs Dev Mode/admin).
+                # Avoid `MSYS=winsymlinks:native ln -s` because without privileges it
+                # silently creates a junction-on-file, which native Windows apps
+                # (e.g. WezTerm) can't read — error 1920.
+                if cmd.exe //c "mklink $win_dst $win_src" >/dev/null 2>&1; then
+                    echo "Linked $dst -> $src (native symlink)"
                 else
-                    echo "WARNING: Could not create symlink for $name (enable Developer Mode or run as admin)"
-                    echo "  Copying file instead: $dst"
+                    echo "Note: no symlink privilege for $name — copying file instead"
                     cp "$src" "$dst"
                 fi
             fi
