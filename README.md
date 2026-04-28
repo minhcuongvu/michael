@@ -9,6 +9,7 @@ Personal dotfiles and shell environment setup for Windows (MSYS2/UCRT64) and Lin
 | `init.sh` | Bootstrap script — sets up shell config, symlinks, and PATH |
 | `wezterm.lua` | WezTerm terminal config (font, padding, MSYS2/UCRT64 shell) |
 | `config.kdl` | Zellij multiplexer config (keybindings, tokyo-night theme, compact layout) |
+| `z-nuke` | Aggressive Zellij zombie session cleaner (installed to ~/.local/bin) |
 | `skill.md` | AI agent skill for this environment (paths, tools, conventions) |
 
 ## Neovim Setup
@@ -62,6 +63,21 @@ Restart your shell (or `source ~/.bashrc`) and you're done.
 - Layout: compact
 - Leader-key keybinds with vim-style navigation (h/j/k/l)
 - tmux compatibility mode (`Ctrl+b`)
+
+### Zellij Session Cleanup
+
+Two tools are provided for dealing with stuck or "zombie" Zellij sessions (works on both Linux and Windows/MSYS2):
+
+- **`znuke`** — shell function (available after sourcing your rc)
+  - Gentler approach: uses `zellij kill-all-sessions` + `delete-all-sessions`
+  - Targeted removal of sockets and resurrectable session data
+  - Safe first choice for most stuck sessions
+
+- **`z-nuke`** — standalone command (installed to `~/.local/bin` by `init.sh`)
+  - Nuclear option: force-kills processes (`pkill -9`) and removes broader state directories
+  - Use only when `znuke` is not enough
+  - Supports `-f` / `--force` to skip confirmation
+  - Handles Linux XDG runtime dirs + Windows AppData locations automatically
 
 ## Installing Packages
 

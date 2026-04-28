@@ -151,14 +151,19 @@ fi
 '
 
 ZNUKE_SNIPPET='
-# znuke: clear all zellij sessions — live, exited, and zombie. Removes:
-#   1. Socket dirs under $TMP/zellij/ (where live-session sockets live; zellij
-#      lists a session as "active" purely from a file in this dir, so a stale
-#      file from a crashed shell makes a zombie that kill-session can'"'"'t reach
-#      — that produces `Os { code: 2, NotFound }` from kill-*).
+# znuke: clear all zellij sessions — live, exited, and zombie.
+#
+# Use the gentler `znuke` function first for most stuck sessions.
+# For completely broken state, use the more aggressive `z-nuke` command
+# (installed by init.sh into ~/.local/bin).
+#
+# Removes:
+#   1. Socket dirs under $TMP/zellij/ (live-session zombies that zellij
+#      kill-session can'"'"'t reach).
 #   2. session_info dirs under %LOCALAPPDATA%/Zellij[ Contributors]/cache/
 #      (resurrectable/EXITED session layouts).
-# Use znuke instead of `zellij kill-all-sessions` when anything is stuck.
+#
+# Prefer `znuke` over `zellij kill-all-sessions` when sessions are stuck.
 znuke() {
     command -v zellij >/dev/null || { echo "zellij not in PATH"; return 1; }
     yes y 2>/dev/null | zellij kill-all-sessions   >/dev/null 2>&1
@@ -391,6 +396,15 @@ else
     link_config "/c/dev/cloud-nvim"       "$HOME/.config/nvim" "nvim"
 fi
 link_config "$SCRIPT_DIR/config.kdl" "$HOME/.config/zellij/config.kdl" "zellij"
+
+# Install z-nuke (aggressive Zellij zombie cleaner)
+# Companion to the gentler `znuke` shell function.
+# Use `z-nuke` only when normal cleanup fails.
+if [[ -f "$SCRIPT_DIR/z-nuke" ]]; then
+    cp "$SCRIPT_DIR/z-nuke" ~/.local/bin/z-nuke
+    chmod +x ~/.local/bin/z-nuke
+    echo "Installed z-nuke (aggressive Zellij zombie cleaner)"
+fi
 
 patch_nvim_plugins
 install_opencode_skill

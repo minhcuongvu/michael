@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# z-nuke — nuclear Zellij cleanup (last resort for stubborn zombies)
+#
+# Supports both Linux and Windows (MSYS2/UCRT64).
+# This is the aggressive companion to the gentler `znuke` shell function.
+# Use only when `znuke` or `zellij kill-all-sessions` fail to clear state.
+#
+# Usage:
+#   z-nuke          # interactive confirmation
+#   z-nuke -f       # force (no prompt — dangerous)
+
+set -euo pipefail
+
+FORCE=false
+if [[ "${1:-}" == "-f" || "${1:-}" == "--force" ]]; then
+    FORCE=true
+elif [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    cat <<'EOF'
+Usage: z-nuke [-f|--force]
+
+Aggressively terminates Zellij and deletes all session state, sockets,
+caches, and resurrectable layouts.
+
+Options:
+  -f, --force   Skip confirmation (use with extreme caution)
+  -h, --help    Show this help
+
+This is more destructive than the 'znuke' function.
+Only use as a last resort for completely stuck sessions.
+EOF
+    exit 0
+fi
+
+echo "🧨 z-nuke: aggressive Zellij zombie elimination"
+echo
+
+if ! $FORCE; then
+    echo "WARNING: This will:"
+    echo "  • Force-kill all zellij processes (pkill -9)"
+    echo "  • Delete sockets, caches, and all resurrectable session state"
+    echo "  • You may lose unsaved layouts and session history"
+    echo
+    read -r -p "Continue? [y/N] " reply
+    [[ "$reply" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 1; }
+fi
+
+echo "Killing zellij processes..."
+pkill -9 zellij 2>/dev/null || true
+
+# Collect directories to remove (supports Linux + MSYS2/Windows)
+dirs=()
+
+# Common locations (work on Linux and in MSYS2 home)
+if [[ -n "${HOME:-}" ]]; then
+    dirs+=("$HOME/.cache/zellij")
+    dirs+=("$HOME/.local/share/zellij")
+    dirs+=("${XDG_STATE_HOME:-$HOME/.local/state}/zellij")
+fi
+
+dirs+=("/tmp/zellij")
+
+# Windows / MSYS2 specific (native Zellij uses AppData heavily)
+if [[ -n "${MSYSTEM:-}" || "${OSTYPE:-}" == msys* || "${OSTYPE:-}" == cygwin* ]]; then
+    local_u="${LOCALAPPDATA:-}"
+    user_u="${USERPROFILE:-}"
+    [[ -n "$local_u" ]] && dirs+=("$(cygpath -u "$local_u")/Temp/zellij")
+    if [[ -n "$user_u" ]]; then
+        up="$(cygpath -u "$user_u")"
+        dirs+=("$up/AppData/Local/Zellij")
+        dirs+=("$up/AppData/Local/Zellij Contributors")
+    fi
+fi
+
+# Linux / pure Unix runtime locations (sockets often live here)
+if [[ -z "${MSYSTEM:-}" && "${OSTYPE:-}" != msys* && "${OSTYPE:-}" != cygwin* ]]; then
+    [[ -n "${XDG_RUNTIME_DIR:-}" ]] && dirs+=("${XDG_RUNTIME_DIR}/zellij")
+    if command -v id >/dev/null 2>&1; then
+        dirs+=("/run/user/$(id -u)/zellij")
+    fi
+    [[ -n "${TMPDIR:-}" ]] && dirs+=("${TMPDIR}/zellij")
+fi
+
+
+echo "Removing Zellij state directories..."
+for d in "${dirs[@]}"; do
+    if [[ -e "$d" ]]; then
+        echo "  removing: $d"
+        rm -rf "$d" 2>/dev/null || true
+    fi
+done
+
+# Recreate minimal clean directories so a fresh session can start
+mkdir -p ~/.config/zellij /tmp/zellij 2>/dev/null || true
+
+echo
+echo "✅ Zellij state has been nuked."
+echo "   Run 'z' (or zellij) to start fresh sessions."
