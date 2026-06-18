@@ -289,13 +289,16 @@ install_msys2_packages() {
 # ── nvim plugin patches ─────────────────────────────────────────────────────
 
 patch_nvim_plugins() {
-    local nvim_data
-    if is_windows; then
-        # Use cloud-nvim-data as configured in the nvim setup
-        nvim_data="$(win_home)/AppData/Local/cloud-nvim-data"
-    else
-        nvim_data="${XDG_DATA_HOME:-$HOME/.local/share}/nvim"
+    # Patches are managed by cloud-nvim's lazy.nvim build/init hooks on all
+    # platforms. init.sh only applies the legacy sed patch on Windows when the
+    # nvim config hasn't been linked yet (e.g. first run before :Lazy install).
+    if ! is_windows; then
+        return
     fi
+
+    local nvim_data
+    # Use cloud-nvim-data as configured in the nvim setup
+    nvim_data="$(win_home)/AppData/Local/cloud-nvim-data"
 
     local target="$nvim_data/lazy/neo-tree.nvim/lua/neo-tree/git/ls-files.lua"
     if [[ ! -f "$target" ]]; then
@@ -388,12 +391,15 @@ if is_windows; then
 fi
 
 # symlinks
+NVIM_CONFIG_SRC="/c/dev/cloud-nvim"
 if is_windows; then
     link_config "$SCRIPT_DIR/wezterm.lua" "$(win_home)/.wezterm.lua"       "wezterm"
-    link_config "/c/dev/cloud-nvim"       "$(win_home)/AppData/Local/nvim" "nvim"
+    link_config "$NVIM_CONFIG_SRC"        "$(win_home)/AppData/Local/nvim" "nvim"
 else
+    # Linux VM / cloud instance: cloud-nvim lives in $HOME
+    NVIM_CONFIG_SRC="$HOME/cloud-nvim"
     link_config "$SCRIPT_DIR/wezterm.lua" "$HOME/.wezterm.lua" "wezterm"
-    link_config "/c/dev/cloud-nvim"       "$HOME/.config/nvim" "nvim"
+    link_config "$NVIM_CONFIG_SRC"      "$HOME/.config/nvim" "nvim"
 fi
 link_config "$SCRIPT_DIR/config.kdl" "$HOME/.config/zellij/config.kdl" "zellij"
 
