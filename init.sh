@@ -137,19 +137,6 @@ if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
 fi
 '
 
-CLAUDE_CODE_SNIPPET='
-# Claude Code (~/.local/bin — native binary, independent of Node)
-# On MSYS2, claude install may use either $HOME or $USERPROFILE
-if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
-    for _d in "$HOME/.local/bin" "$(cygpath -u "$USERPROFILE")/.local/bin"; do
-        [[ -d "$_d" ]] && case ":$PATH:" in *:"$_d":*) ;; *) export PATH="$_d:$PATH" ;; esac
-    done
-    unset _d
-else
-    [[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
-fi
-'
-
 ZNUKE_SNIPPET='
 # znuke: clear all zellij sessions — live, exited, and zombie.
 #
@@ -244,7 +231,6 @@ add_to_rc() {
     ensure_snippet "$rc" "fzf"              'fzf --bash'     "$FZF_SNIPPET"
     ensure_snippet "$rc" "dotnet PATH"      '/c/Program Files/dotnet' "$DOTNET_SNIPPET"
     ensure_snippet "$rc" "Azure CLI PATH"   '/c/Program Files/Microsoft SDKs/Azure/CLI2/wbin' "$AZURE_CLI_SNIPPET"
-    ensure_snippet "$rc" "Claude Code PATH" '\.local/bin'    "$CLAUDE_CODE_SNIPPET"
     ensure_snippet "$rc" "git prompt"       '_git_prompt'    "$GIT_PROMPT_SNIPPET"
     ensure_snippet "$rc" "znuke"            'znuke()'        "$ZNUKE_SNIPPET"
 }
@@ -359,21 +345,23 @@ install_opencode_skill() {
     fi
 }
 
-# ── Claude Code ─────────────────────────────────────────────────────────────
+# ── opencode ────────────────────────────────────────────────────────────────
 
-install_claude_code() {
-    if command -v claude &>/dev/null; then
-        echo "Claude Code already installed ($(claude --version 2>/dev/null || echo 'unknown version'))"
+upgrade_opencode() {
+    local bin
+    if command -v opencode &>/dev/null; then
+        bin=opencode
+    elif [[ -x "$HOME/.opencode/bin/opencode" ]]; then
+        bin="$HOME/.opencode/bin/opencode"
+    elif is_windows && [[ -n "${USERPROFILE:-}" ]] && [[ -x "$(cygpath -u "$USERPROFILE")/.opencode/bin/opencode" ]]; then
+        bin="$(cygpath -u "$USERPROFILE")/.opencode/bin/opencode"
+    else
+        echo "opencode not found — skipping upgrade"
         return
     fi
 
-    if ! command -v npm &>/dev/null; then
-        echo "npm not found — skipping Claude Code install (install Node/fnm first)"
-        return
-    fi
-
-    echo "Installing Claude Code..."
-    npm install -g @anthropic-ai/claude-code && claude install
+    echo "Upgrading opencode..."
+    "$bin" upgrade
 }
 
 # ── main ─────────────────────────────────────────────────────────────────────
@@ -414,6 +402,6 @@ fi
 
 patch_nvim_plugins
 install_opencode_skill
-install_claude_code
+upgrade_opencode
 
 echo "Done. Restart your shell or run: source ~/.bashrc"
