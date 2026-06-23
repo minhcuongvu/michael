@@ -117,6 +117,10 @@ FZF_SNIPPET='
 if command -v fzf &>/dev/null; then
     eval "$(fzf --bash)"
 fi
+
+# fzf/grok inject `alias git='"'"'/c/Program Files/Git/bin/git.exe'"'"'`, which breaks
+# command substitution (spaces in path). Prefer MSYS2 git for shell use.
+unalias git 2>/dev/null
 '
 
 DOTNET_SNIPPET='
@@ -187,11 +191,11 @@ znuke() {
 '
 
 GIT_PROMPT_SNIPPET='
-# git prompt
+# git prompt (after tool init so PROMPT_COMMAND/PS1 stay final)
 _git_prompt() {
     local b dirty
-    b=$(git symbolic-ref --short HEAD 2>/dev/null) || { GIT_INFO='"'"''"'"'; return; }
-    [[ -n $(git status --porcelain 2>/dev/null) ]] && dirty='"'"' *'"'"'
+    b=$(command git symbolic-ref --short HEAD 2>/dev/null) || { GIT_INFO='"'"''"'"'; return; }
+    [[ -n $(command git status --porcelain 2>/dev/null) ]] && dirty='"'"' *'"'"'
     GIT_INFO=" (${b}${dirty})"
 }
 PROMPT_COMMAND='"'"'_git_prompt'"'"'
