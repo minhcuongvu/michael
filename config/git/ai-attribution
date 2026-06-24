@@ -1,0 +1,16 @@
+# AI commit attribution reference (forgejo-workflow / git-ai-commits skills)
+#
+# Format:
+#   Co-authored-by: <Name> (<model-id>) <email>
+#
+# Model table:
+#   Claude Opus 4.5  -> Co-authored-by: Claude (claude-opus-4-5) <noreply@anthropic.com>
+#   Claude Opus 4.6  -> Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
+#   Claude Sonnet 4  -> Co-authored-by: Claude (claude-sonnet-4) <noreply@anthropic.com>
+#   Grok             -> Co-authored-by: opencode (grok-4-1-fast) <grok@x.ai>
+#   Grok Composer    -> Co-authored-by: Grok (grok-composer-2.5-fast) <grok@x.ai>
+#   GPT-4            -> Co-authored-by: GPT (gpt-4) <noreply@openai.com>
+#   Kimi K2.5        -> Co-authored-by: Kimi (kimi-k2.5) <noreply@moonshot.cn>
+#
+# Set GIT_AI_COMMIT=1 to auto-append ai.coauthor via prepare-commit-msg hook.
+# Human commits: unset GIT_AI_COMMIT or run: GIT_AI_COMMIT= git commit ...
