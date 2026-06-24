@@ -2,7 +2,7 @@
 # init.sh — set up shell environment (bash, wezterm, zellij, nvim)
 # Works on Windows (MSYS2/UCRT64) and Linux
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -259,6 +259,10 @@ if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
 fi
 '
 
+GIT_AI_COMMIT_SNIPPET='
+# AI-assisted git commits: auto-append Co-authored-by via prepare-commit-msg hook
+export GIT_AI_COMMIT=1
+'
 GIT_PROMPT_SNIPPET='
 # git prompt (after tool init so PROMPT_COMMAND/PS1 stay final)
 _git_prompt() {
@@ -389,7 +393,18 @@ add_to_rc() {
     ensure_snippet "$rc" "Forgejo MCP env"  '\.config/forgejo/env' "$FORGEJO_SNIPPET"
     ensure_snippet "$rc" "ping wrapper"     'ping() {'       "$PING_WRAPPER_SNIPPET"
     ensure_snippet "$rc" "git prompt"       '_git_prompt'    "$GIT_PROMPT_SNIPPET"
+    ensure_snippet "$rc" "git AI commits"   'GIT_AI_COMMIT=1' "$GIT_AI_COMMIT_SNIPPET"
     ensure_snippet "$rc" "znuke"            'znuke()'        "$ZNUKE_SNIPPET"
+}
+
+setup_git() {
+    local git_dir="$SCRIPT_DIR/config/git"
+    mkdir -p "$HOME/.config/git/hooks"
+    cp "$git_dir/hooks/prepare-commit-msg" "$HOME/.config/git/hooks/"
+    chmod +x "$HOME/.config/git/hooks/prepare-commit-msg"
+    cp "$git_dir/ai-attribution" "$HOME/.config/git/ai-attribution"
+    link_config "$git_dir/gitconfig" "$HOME/.gitconfig" "gitconfig"
+    git config --global core.hooksPath "$HOME/.config/git/hooks"
 }
 
 setup_bash() {
@@ -632,6 +647,7 @@ is_windows && install_msys2_packages
 is_windows && install_zellij
 
 setup_bash "$HOME"
+setup_git
 
 if is_windows; then
     WIN_HOME="$(win_home)"
