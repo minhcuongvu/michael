@@ -8,246 +8,100 @@ metadata:
   audience: ai-assistants
 ---
 
-## Environment Overview
+## Overview
 
-This is a **Windows development environment** using MSYS2 with the UCRT64 toolchain. The shell is bash launched through WezTerm.
+Windows dev environment: **MSYS2 UCRT64 bash** via WezTerm — not CMD/PowerShell.
 
-## Critical Path Information
+| Location | Path |
+|----------|------|
+| User home | `/c/Users/Michael` |
+| Dotfiles | `/c/Dev/michael` |
+| opencode | `/c/Dev/opencode` |
+| Cargo | `/c/Users/Michael/.cargo/bin` |
+| MSYS2 tools | `/c/msys64/ucrt64/bin` |
+| Git | `/c/msys64/ucrt64/bin/git.exe` (use this, not Git for Windows) |
 
-**Your shell is MSYS2 bash, not Windows CMD/PowerShell.**
+## Tools
 
-| Location | Path | Purpose |
-|----------|------|---------|
-| User home | `/c/Users/Michael` | Windows user profile |
-| MSYS2 home | `/home/Michael` or `/c/Users/Michael` | Same location via CHERE_INVOKING |
-| Dotfiles repo | `/c/Dev/michael` | This repository |
-| opencode | `/c/Dev/opencode` | AI assistant binary |
-| Cargo | `/c/Users/Michael/.cargo/bin` | Rust tools (zellij, fnm, cargo) |
-| MSYS2 tools | `/c/msys64/ucrt64/bin` | Native Windows binaries |
-| Git | `/c/msys64/ucrt64/bin/git.exe` | UCRT64 git (use this, not Git for Windows) |
+**Cargo (`~/.cargo/bin`):** `zellij`, `fnm`, `cargo`, `rustc`, `rustfmt`, `clippy`
 
-## Available Tools
+**Claude Code (`~/.local/bin`):** `claude`
 
-### Rust/Cargo (in `~/.cargo/bin`)
-- `zellij` - Terminal multiplexer (v0.44.0, custom build)
-- `fnm` - Fast Node Manager (v1.39.0)
-- Standard: `cargo`, `rustc`, `rustfmt`, `clippy`
+**UCRT64 (`/c/msys64/ucrt64/bin`):** `nvim`, `rg`, `jq`, `fzf`, `gcc`/`g++` (v15.2, CGO-enabled), `mingw32-make`, `git`, `node`/`npm`, `python3`, `cmake`, `ninja`
 
-### Claude Code (in `~/.local/bin`)
-- `claude` - Anthropic's AI coding assistant
+**Aliases:** `z`→`zellij`, `l`→`ls`, `make`→`mingw32-make`
 
-### MSYS2 UCRT64 (in `/c/msys64/ucrt64/bin`)
-- `nvim` - Neovim (lazy.nvim-based config, managed externally and linked by init.sh)
-- `rg` - ripgrep
-- `jq` - JSON processor
-- `fzf` - Fuzzy finder with shell key bindings
-- `gcc`, `g++` - MinGW-w64 compiler (UCRT64)
-- `make` (actually `mingw32-make`)
-- `git` - Git for UCRT64
-- `node`, `npm` - Node.js
-- `python`, `python3` - Python 3.14
-- `cmake`, `ninja` - Build tools
+## Path Rules
 
-### C/C++ Compiler for CGO
-- `gcc` (v15.2.0) - MinGW-w64 UCRT64 compiler at `/c/msys64/ucrt64/bin/gcc`
-- **CGO is enabled** - Go can compile C code: `CGO_ENABLED=1 go build`
-- Used by backend1 and other Go projects requiring CGO
+- Use Unix paths: `/c/Users/Michael/project` — never `C:\...` or `C:/...`
+- Windows-native tools: `winpath=$(cygpath -w "/c/Users/Michael/file.txt")`
 
-### Aliases (defined in `.bashrc`)
-- `z` → `zellij` (with tab completion)
-- `l` → `ls`
-- `make` → `mingw32-make`
+## Git
 
-## Path Handling Rules
+Use UCRT64 git (`which git` → `/c/msys64/ucrt64/bin/git`). Prompt shows branch + ` *` when dirty.
 
-**ALWAYS use Unix-style paths in bash:**
-- ✅ `/c/Users/Michael/project`
-- ❌ `C:\Users\Michael\project`
-- ❌ `C:/Users/Michael/project` (sometimes works, avoid)
+## Node
 
-**For Windows-native tools that need Windows paths:**
-```bash
-winpath=$(cygpath -w "/c/Users/Michael/file.txt")
-# Results in: C:\Users\Michael\file.txt
-```
+`fnm` manages versions. Default: v24 (`.node-version`). `fnm list` / `fnm use 20` / `fnm install 22`
 
-## Git Workflow
+## Zellij
 
-**Use UCRT64 git, not Git for Windows:**
-```bash
-which git
-# Should show: /c/msys64/ucrt64/bin/git
-```
+`Ctrl+g` lock · `Ctrl+t` tab · `Ctrl+p` pane · `Ctrl+n` resize · `Ctrl+s` scroll · `Ctrl+b` tmux mode
 
-**Git prompt shows:**
-- Branch name
-- Dirty indicator (` *`) when uncommitted changes exist
+Pane mode: `n`/`r`/`d` new pane · `h/j/k/l` focus · `x` close. Theme: tokyo-night, layout: compact.
 
-## Node.js Management
-
-**fnm (Fast Node Manager) is installed:**
-```bash
-fnm list          # List installed versions
-fnm use 20        # Switch to Node 20
-fnm install 22    # Install Node 22
-```
-
-**Default version:** v24 (from `.node-version` file)
-
-## Zellij (Terminal Multiplexer)
-
-**Key bindings:**
-- `Ctrl+g` - Lock/unlock input
-- `Ctrl+t` - Tab mode
-- `Ctrl+p` - Pane mode
-- `Ctrl+n` - Resize mode
-- `Ctrl+s` - Scroll mode
-- `Ctrl+b` - Tmux compatibility mode
-
-**In pane mode (`Ctrl+p`):**
-- `n` - New pane
-- `r` - New pane right
-- `d` - New pane down
-- `h/j/k/l` - Move focus
-- `x` - Close pane
-
-**Theme:** tokyo-night  
-**Default layout:** compact
-
-## Common Operations
-
-### Running Node scripts
-```bash
-# fnm automatically switches based on .node-version
-node script.js
-npm run dev
-```
-
-### Building C/C++ projects
-```bash
-# Use mingw32-make (aliased as make)
-make
-# Or
-mingw32-make
-
-# Or with cmake
-mkdir build && cd build
-cmake .. -G "MinGW Makefiles"
-make
-```
-
-### Building Go projects with CGO
-
-**backend1 requires CGO (C compiler):**
-```bash
-# CGO is automatically enabled with UCRT64 gcc
-go build ./...
-
-# Or explicitly enable CGO
-CGO_ENABLED=1 go build ./...
-
-# The C compiler is at:
-# /c/msys64/ucrt64/bin/gcc
-```
-
-### File operations
-```bash
-# Use rg (ripgrep) instead of grep
-rg "pattern" --type ts
-
-# Use fd (if installed) or find
-find . -name "*.rs" -type f
-```
-
-## Environment Variables
-
-Key vars set by WezTerm/init.sh:
-- `MSYSTEM=UCRT64` - MSYS2 subsystem
-- `CHERE_INVOKING=1` - Preserves current directory
-- `MSYS2_PATH_TYPE=inherit` - Inherits Windows PATH
-
-## Installing Packages
-
-**When installing packages on Windows, ALWAYS use the UCRT64 prefix:**
+## Common Commands
 
 ```bash
-# CORRECT - installs UCRT64 native binary
-pacman -S mingw-w64-ucrt-x86_64-ripgrep
-pacman -S mingw-w64-ucrt-x86_64-jq
-
-# WRONG - installs MSYS2-native version (may not work)
-pacman -S ripgrep
-pacman -S jq
+node script.js                    # fnm auto-switches from .node-version
+make                              # mingw32-make
+CGO_ENABLED=1 go build ./...      # backend1 needs CGO
+rg "pattern" --type ts            # prefer rg over grep
 ```
 
-**Package naming:** `mingw-w64-ucrt-x86_64-<package>`
+## Packages
 
-Examples installed by init.sh:
-- `mingw-w64-ucrt-x86_64-ripgrep`
-- `mingw-w64-ucrt-x86_64-jq`
+Always install UCRT64 prefix: `pacman -S mingw-w64-ucrt-x86_64-<pkg>` — not bare `pacman -S <pkg>`.
 
-**To search for packages:**
-```bash
-pacman -Ss <search-term>
-```
+Search: `pacman -Ss <term>`
 
-## What NOT to do
+## Don't
 
-```bash
-# WRONG - using backslashes in bash
-cd C:\Users\Michael
-
-# WRONG - using Windows git in MSYS2
-"C:/Program Files/Git/bin/git.exe" status
-
-# WRONG - using cmd commands
-dir
-cls
-
-# CORRECT - use Unix equivalents
-ls
-clear
-cd /c/Users/Michael
-```
+- Backslash paths, `dir`/`cls`, or Git for Windows (`C:/Program Files/Git/bin/git.exe`)
+- Use `ls`, `clear`, `cd /c/Users/Michael` instead
 
 ## Troubleshooting
 
-**"command not found" for cargo tools:**
-- Check PATH includes `/c/Users/$USER/.cargo/bin`
-- Run `source ~/.bashrc`
+| Problem | Fix |
+|---------|-----|
+| cargo tools not found | Check PATH has `~/.cargo/bin`; `source ~/.bashrc` |
+| Git wrong paths | Use `/c/msys64/ucrt64/bin/git` |
+| Path conversion | `cygpath -w` (Unix→Win), `cygpath -u` (Win→Unix) |
+| Broken env | `cd /c/Dev/michael && bash init.sh && source ~/.bashrc` |
 
-**Git acts weird/shows wrong paths:**
-- Make sure you're using `/c/msys64/ucrt64/bin/git`
-- Not `C:/Program Files/Git/bin/git.exe`
+## NordVPN + Tailscale + Forgejo
 
-**Windows paths in scripts:**
-- Use `cygpath -w` to convert Unix→Windows
-- Use `cygpath -u` to convert Windows→Unix
+NordVPN blocks non-tunneled apps from Tailscale (`100.x.x.x`). Add **Windows `.exe` paths** to split tunnel:
 
-## Neovim Configuration
+| Purpose | Executable |
+|---------|------------|
+| Tailscale | `C:\Program Files\Tailscale\tailscale.exe`, `tailscaled.exe` |
+| Forgejo MCP | `C:\dev\forgejo-mcp\forgejo-mcp-server.exe` |
+| Git HTTP to Forgejo | `C:\msys64\ucrt64\libexec\git-core\git-remote-http.exe` |
+| Optional | `C:\msys64\ucrt64\bin\git.exe` |
 
-Neovim is set up as a separate configuration repository. `init.sh` will:
-1. Link the external nvim config to `~/AppData/Local/nvim` (Windows) or `~/.config/nvim` (Linux)
-2. Apply patches to neo-tree.nvim for better Windows compatibility
+**Do NOT** allowlist `git-remote-https.exe` — breaks GitHub TLS through VPN.
 
-**To open nvim:**
+- `http://` Tailscale remotes → bypass VPN
+- `https://` GitHub → use VPN; use `https://github.com/...` (no `www`)
+
+Symptoms: HTTP blocked → `Bad access` / `Failed to connect ... after 0 ms`. HTTPS bypass → `Recv failure: Connection was reset` on GitHub.
+
 ```bash
-nvim
-# or
-nvim filename.txt
+curl -v --connect-timeout 5 http://100.124.195.47:3000/
+GIT_TRACE=1 git fetch upstream
 ```
 
-**If nvim config is not linked:**
-- Ensure the external nvim repository exists
-- Run `bash init.sh` from this repo to create the symlink
+## Neovim
 
-## Re-running Setup
-
-If environment seems broken:
-```bash
-cd /c/Dev/michael
-bash init.sh
-source ~/.bashrc
-```
-
-This re-links configs (including nvim) and ensures PATH is correct.
+External config repo; `init.sh` symlinks to `~/AppData/Local/nvim`. If missing: run `bash init.sh`.

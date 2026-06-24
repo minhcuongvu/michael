@@ -1,0 +1,10 @@
+# Copy to config.toml and set your token (config.toml is local-only, not committed)
+
+[mcp_servers.forgejo]
+command = "C:/dev/forgejo-mcp/forgejo-mcp-server.exe"
+enabled = true
+startup_timeout_sec = 15
+
+[mcp_servers.forgejo.env]
+FORGEJO_URL = "http://100.124.195.47:3000"
+FORGEJO_TOKEN = "your_forgejo_api_token_here"

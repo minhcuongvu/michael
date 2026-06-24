@@ -1,1 +1,10 @@
 .claude/
+
+# Agent / IDE ephemeral artifacts
+agent-tools/
+terminals/
+mcps/
+
+# Local secrets (keep *.example templates)
+.grok/config.toml
+.grok/forgejo.env

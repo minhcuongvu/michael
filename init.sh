@@ -141,6 +141,48 @@ if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
 fi
 '
 
+TAILSCALE_SNIPPET='
+# Tailscale CLI (MSYS2 minimal PATH omits C:\Program Files\Tailscale)
+if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
+    _tailscale_bin="/c/Program Files/Tailscale"
+    [[ -d "$_tailscale_bin" ]] && case ":$PATH:" in *:"$_tailscale_bin":*) ;; *) export PATH="$_tailscale_bin:$PATH" ;; esac
+    unset _tailscale_bin
+fi
+'
+
+FORGEJO_SNIPPET='
+# Forgejo MCP — Grok expands ${FORGEJO_TOKEN} from the environment at startup
+_fj_env="$HOME/.config/forgejo/env"
+if [[ -f "$_fj_env" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "$_fj_env"
+    set +a
+fi
+unset _fj_env
+'
+
+PING_WRAPPER_SNIPPET='
+# Windows ping.exe rejects GNU -c; map it to -n for bash muscle memory.
+if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
+    ping() {
+        local args=()
+        while (($#)); do
+            case "$1" in
+                -c)
+                    shift
+                    [[ $# -gt 0 ]] || { echo "ping: -c requires an argument" >&2; return 2; }
+                    args+=(-n "$1")
+                    shift
+                    ;;
+                *) args+=("$1"); shift ;;
+            esac
+        done
+        command ping "${args[@]}"
+    }
+fi
+'
+
 ZNUKE_SNIPPET='
 # znuke: clear all zellij sessions — live, exited, and zombie.
 #
@@ -235,6 +277,9 @@ add_to_rc() {
     ensure_snippet "$rc" "fzf"              'fzf --bash'     "$FZF_SNIPPET"
     ensure_snippet "$rc" "dotnet PATH"      '/c/Program Files/dotnet' "$DOTNET_SNIPPET"
     ensure_snippet "$rc" "Azure CLI PATH"   '/c/Program Files/Microsoft SDKs/Azure/CLI2/wbin' "$AZURE_CLI_SNIPPET"
+    ensure_snippet "$rc" "Tailscale PATH"   '/c/Program Files/Tailscale' "$TAILSCALE_SNIPPET"
+    ensure_snippet "$rc" "Forgejo MCP env"  '\.config/forgejo/env' "$FORGEJO_SNIPPET"
+    ensure_snippet "$rc" "ping wrapper"     'ping() {'       "$PING_WRAPPER_SNIPPET"
     ensure_snippet "$rc" "git prompt"       '_git_prompt'    "$GIT_PROMPT_SNIPPET"
     ensure_snippet "$rc" "znuke"            'znuke()'        "$ZNUKE_SNIPPET"
 }

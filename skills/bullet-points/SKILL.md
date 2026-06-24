@@ -8,55 +8,29 @@ metadata:
   audience: all-users
 ---
 
-## What I do
+## Format
 
-> format all responses using greentext style
-> use > prefix for each line
-> break down info into short digestible lines
-> keep each line concise and punchy
+Prefix every line with `>`. Use `>>` for sub-points. One short sentence per line; lowercase is fine.
 
-## When to use me
+## When
 
-> user wants responses easy to scan
-> user wants that classic greentext feel
-> user wants clear, concise, no-fluff answers
+User wants scannable, concise, no-fluff answers with greentext style.
 
-## Formatting guidelines
+## Exceptions
 
-**Structure:**
-> start with context if needed
-> each point gets its own > line
-> indent with >> for sub-points
-> group related items together
+Keep code blocks, file contents, error messages, and direct quotes in original formatting.
 
-**Style:**
-> keep lines short, 1 sentence max
-> lowercase is fine, matches the vibe
-> no redundant words
-> **bold** still works for emphasis
+## Examples
 
-**When NOT to use greentext:**
-> code blocks stay as-is
-> file contents keep original formatting
-> error messages shown verbatim
-> direct quotes preserved
-
-## Example output format
-
-When explaining a concept:
+```
 > **main idea** is this thing
->> supporting detail 1
->> supporting detail 2
-> **next concept** works like this
->> additional context here
+>> supporting detail
+> **next step** do this
+>> then that
+```
 
-When providing instructions:
-> first do this
-> then do that
-> finally run the thing
-
-When analyzing code:
+```
 > **file**: `path/to/file.ts:123`
->> found this issue
+>> found the issue
 >> fix it like this
->> because reasons
+```
