@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Append AI Co-authored-by trailer when GIT_AI_COMMIT=1.
+# Format: Co-authored-by: <Name> (<model-id>) <email>
+# See: skills/git-ai-commits/SKILL.md
+
+set -euo pipefail
+
+[[ "${GIT_AI_COMMIT:-}" == "1" ]] || exit 0
+
+COMMIT_MSG_FILE="$1"
+COAUTHOR="$(git config --global --get ai.coauthor 2>/dev/null || true)"
+
+[[ -n "$COAUTHOR" ]] || exit 0
+grep -qi '^Co-authored-by:' "$COMMIT_MSG_FILE" && exit 0
+
+printf '\n%s\n' "$COAUTHOR" >> "$COMMIT_MSG_FILE"
