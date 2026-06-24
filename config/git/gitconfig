@@ -1,0 +1,9 @@
+[user]
+	name = michael
+	email = noedigsti@gmail.com
+[credential]
+	helper = store
+[include]
+	path = ~/.config/git/ai-attribution
+[ai]
+	coauthor = Co-authored-by: Grok (grok-composer-2.5-fast) <grok@x.ai>
