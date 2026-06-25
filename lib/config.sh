@@ -11,7 +11,6 @@
 : "${FORGEJO_URL:="http://100.124.195.47:3000"}"
 
 # Windows program roots (Unix-style paths for MSYS2)
-: "${DOTNET_ROOT:="/c/Program Files/dotnet"}"
 : "${AZURE_CLI_ROOT:="/c/Program Files/Microsoft SDKs/Azure/CLI2/wbin"}"
 : "${TAILSCALE_ROOT:="/c/Program Files/Tailscale"}"
 

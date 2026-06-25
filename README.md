@@ -39,7 +39,7 @@ Restart your shell or open a new WezTerm tab.
 2. **PATH setup** — adds tool dirs MSYS2's minimal PATH omits:
    - Cargo (`~/.cargo/bin`)
    - opencode (`~/.opencode/bin`)
-   - .NET CLI, Azure CLI, Tailscale (Windows only)
+   - Azure CLI, Tailscale (Windows only)
 3. **Shell tools** — fnm (Node), fzf (fuzzy finder + key bindings)
 4. **Aliases** — `z` → `zellij`, `l` → `ls`, `make` → `mingw32-make` (Windows)
 5. **Git** — branch/dirty prompt; unaliases Git-for-Windows `git.exe` so MSYS2 git is used

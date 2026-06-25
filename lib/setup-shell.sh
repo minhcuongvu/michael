@@ -106,15 +106,6 @@ fi
 unalias git 2>/dev/null
 '
 
-DOTNET_SNIPPET="
-# machine-wide .NET CLI
-if [[ -n \"\$MSYSTEM\" || \"\$OSTYPE\" == msys* ]]; then
-    _dotnet_bin='$DOTNET_ROOT'
-    [[ -d \"\$_dotnet_bin\" ]] && case \":\$PATH:\" in *:\"\$_dotnet_bin\":*) ;; *) export PATH=\"\$_dotnet_bin:\$PATH\" ;; esac
-    unset _dotnet_bin
-fi
-"
-
 AZURE_CLI_SNIPPET="
 # Azure CLI (Windows installer)
 if [[ -n \"\$MSYSTEM\" || \"\$OSTYPE\" == msys* ]]; then
@@ -259,7 +250,6 @@ add_to_rc() {
     fi
     ensure_snippet "$rc" "fnm"              'fnm env'        "$FNM_SNIPPET"
     ensure_snippet "$rc" "fzf"              'fzf --bash'     "$FZF_SNIPPET"
-    ensure_snippet "$rc" "dotnet PATH"      "$DOTNET_ROOT"   "$DOTNET_SNIPPET" fixed
     ensure_snippet "$rc" "Azure CLI PATH"   "$AZURE_CLI_ROOT" "$AZURE_CLI_SNIPPET" fixed
     ensure_snippet "$rc" "Tailscale PATH"   "$TAILSCALE_ROOT" "$TAILSCALE_SNIPPET" fixed
     ensure_snippet "$rc" "Forgejo MCP env"  '\.config/forgejo/env' "$FORGEJO_SNIPPET"
