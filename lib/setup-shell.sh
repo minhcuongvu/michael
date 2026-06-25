@@ -189,7 +189,7 @@ if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
         done
         command ping "${args[@]}"
     }
-}
+fi
 '
 
 GIT_AI_COMMIT_SNIPPET='
@@ -242,7 +242,7 @@ add_to_rc() {
     if [[ "${SKIP_ZELLIJ:-0}" != "1" ]]; then
         ensure_snippet "$rc" "zellij PATH"      '_zellij_bin='   "$ZELLIJ_PATH_SNIPPET"
         ensure_snippet "$rc" "zellij config"    'ZELLIJ_CONFIG_DIR' "$ZELLIJ_SNIPPET"
-        ensure_snippet "$rc" "zellij wrapper"   '^z()'           "$ZELLIJ_WRAPPER_SNIPPET"
+        ensure_snippet "$rc" "zellij wrapper"   'z() {'           "$ZELLIJ_WRAPPER_SNIPPET"
         ensure_snippet "$rc" "aliases"          'alias l='       "$ALIASES_SNIPPET"
         ensure_snippet "$rc" "znuke"            'znuke()'        "$ZNUKE_SNIPPET"
     else
