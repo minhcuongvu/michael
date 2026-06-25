@@ -87,19 +87,60 @@ OPENCODE_SNIPPET='
 [[ -d "$HOME/.opencode/bin" ]] && export PATH="$HOME/.opencode/bin:$PATH"
 '
 
+USER_TMP_SNIPPET='
+# Per-user temp (MSYS2 defaults TMP to shared /tmp)
+if [[ -n "${LOCALAPPDATA:-}" && ( -n "$MSYSTEM" || "$OSTYPE" == msys* || -n "${WINDIR:-}" ) ]]; then
+    _user_tmp="$(cygpath -u "$LOCALAPPDATA")/Temp"
+    [[ -L "$_user_tmp/zellij" ]] && rm -f "$_user_tmp/zellij"
+    export TMPDIR="$_user_tmp"
+    export TMP="$_user_tmp"
+    export TEMP="$_user_tmp"
+    mkdir -p "$_user_tmp"
+    unset _user_tmp
+fi
+'
+
+ZELLIJ_WRAPPER_SNIPPET='
+# zellij wrapper — one session ("one") per Windows profile
+z() {
+    command -v zellij >/dev/null || { echo "zellij not in PATH"; return 1; }
+    if (($# == 0)); then
+        zellij attach -c one
+    else
+        zellij "$@"
+    fi
+}
+'
+
+ZELLIJ_PATH_SNIPPET='
+# zellij MSI install (Windows — %LOCALAPPDATA%/Zellij)
+if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
+    _zellij_bin="$(cygpath -u "$LOCALAPPDATA")/Zellij"
+    [[ -d "$_zellij_bin" ]] && case ":$PATH:" in *:"$_zellij_bin":*) ;; *) export PATH="$_zellij_bin:$PATH" ;; esac
+    unset _zellij_bin
+fi
+'
+
 ZELLIJ_SNIPPET='
 # zellij config dir (Windows native binary looks in %APPDATA%, not ~/.config)
 if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
     export ZELLIJ_CONFIG_DIR="$(cygpath -u "$USERPROFILE")/.config/zellij"
+    mkdir -p "$ZELLIJ_CONFIG_DIR"
+    [[ -n "${LOCALAPPDATA:-}" ]] && mkdir -p "$(cygpath -u "$LOCALAPPDATA")/Zellij/cache"
 fi
 '
 
 ALIASES_SNIPPET='
 # aliases
 if command -v zellij &>/dev/null; then
-    alias z='"'"'zellij'"'"'
-    source <(zellij setup --generate-completion bash)
-    complete -F _zellij z
+    _zcomp="${TMPDIR:-/tmp}/zellij-completion-${UID:-0}.bash"
+    if zellij setup --generate-completion bash >"$_zcomp" 2>/dev/null; then
+        # shellcheck disable=SC1090
+        source "$_zcomp"
+        complete -F _zellij z 2>/dev/null
+    fi
+    rm -f "$_zcomp"
+    unset _zcomp
 fi
 alias l='"'"'ls'"'"'
 if command -v mingw32-make &>/dev/null; then alias make='"'"'mingw32-make'"'"'; fi
@@ -162,6 +203,41 @@ fi
 unset _fj_env
 '
 
+ZNUKE_SNIPPET='
+# znuke: clear all zellij sessions — live, exited, and zombie.
+znuke() {
+    command -v zellij >/dev/null || { echo "zellij not in PATH"; return 1; }
+    yes y 2>/dev/null | zellij kill-all-sessions   >/dev/null 2>&1
+    yes y 2>/dev/null | zellij delete-all-sessions >/dev/null 2>&1
+
+    local _tmp_candidates=("${TMPDIR:-}" "${TMP:-}" "${TEMP:-}" /tmp /c/msys64/tmp)
+    if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
+        [[ -n "${LOCALAPPDATA:-}" ]] && _tmp_candidates+=("$(cygpath -u "$LOCALAPPDATA")/Temp")
+    fi
+    local _seen=" " _d
+    for _d in "${_tmp_candidates[@]}"; do
+        [[ -z "$_d" || "$_seen" == *" $_d "* ]] && continue
+        _seen+="$_d "
+        [[ -L "$_d/zellij" ]] && rm -f "$_d/zellij"
+        rm -rf "$_d/zellij/contract_version_"*"/" 2>/dev/null
+    done
+
+    if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
+        local _u; _u="$(cygpath -u "${USERPROFILE:-}")"
+        rm -rf "$_u/AppData/Local/Zellij/cache"/*/session_info/* \
+               "$_u/AppData/Local/Zellij Contributors/Zellij/cache"/*/session_info/* \
+               2>/dev/null
+    fi
+
+    local remaining; remaining=$(zellij list-sessions 2>&1)
+    if [[ "$remaining" == *"No active"* || -z "$remaining" ]]; then
+        echo "znuke: all sessions cleared"
+    else
+        echo "znuke: still present:"; echo "$remaining"
+    fi
+}
+'
+
 PING_WRAPPER_SNIPPET='
 # Windows ping.exe rejects GNU -c; map it to -n for bash muscle memory.
 if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
@@ -183,55 +259,6 @@ if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
 fi
 '
 
-ZNUKE_SNIPPET='
-# znuke: clear all zellij sessions — live, exited, and zombie.
-#
-# Use the gentler `znuke` function first for most stuck sessions.
-# For completely broken state, use the more aggressive `z-nuke` command
-# (installed by init.sh into ~/.local/bin).
-#
-# Removes:
-#   1. Socket dirs under $TMP/zellij/ (live-session zombies that zellij
-#      kill-session can'"'"'t reach).
-#   2. session_info dirs under %LOCALAPPDATA%/Zellij[ Contributors]/cache/
-#      (resurrectable/EXITED session layouts).
-#
-# Prefer `znuke` over `zellij kill-all-sessions` when sessions are stuck.
-znuke() {
-    command -v zellij >/dev/null || { echo "zellij not in PATH"; return 1; }
-    yes y 2>/dev/null | zellij kill-all-sessions   >/dev/null 2>&1
-    yes y 2>/dev/null | zellij delete-all-sessions >/dev/null 2>&1
-
-    # Socket dirs (live-session zombies). Zellij honors $TMP/$TMPDIR; on MSYS2
-    # this is usually /tmp (= /c/msys64/tmp), distinct from %LOCALAPPDATA%/Temp.
-    local _tmp_candidates=("${TMPDIR:-}" "${TMP:-}" "${TEMP:-}" /tmp /c/msys64/tmp)
-    if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
-        [[ -n "${LOCALAPPDATA:-}" ]] && _tmp_candidates+=("$(cygpath -u "$LOCALAPPDATA")/Temp")
-    fi
-    local _seen=" " _d
-    for _d in "${_tmp_candidates[@]}"; do
-        [[ -z "$_d" || "$_seen" == *" $_d "* ]] && continue
-        _seen+="$_d "
-        rm -rf "$_d/zellij/contract_version_"*"/" 2>/dev/null
-    done
-
-    # Resurrectable session layouts (Windows AppData; both org strings).
-    if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
-        local _u; _u="$(cygpath -u "${USERPROFILE:-}")"
-        rm -rf "$_u/AppData/Local/Zellij/cache"/*/session_info/* \
-               "$_u/AppData/Local/Zellij Contributors/Zellij/cache"/*/session_info/* \
-               2>/dev/null
-    fi
-
-    local remaining; remaining=$(zellij list-sessions 2>&1)
-    if [[ "$remaining" == *"No active"* || -z "$remaining" ]]; then
-        echo "znuke: all sessions cleared"
-    else
-        echo "znuke: still present:"; echo "$remaining"
-    fi
-}
-'
-
 GIT_PROMPT_SNIPPET='
 # git prompt (after tool init so PROMPT_COMMAND/PS1 stay final)
 _git_prompt() {
@@ -246,12 +273,60 @@ export PS1='"'"'\[\e[32m\]\u@\h \[\e[33m\]\w\[\e[36m\]${GIT_INFO}\[\e[0m\]\n\$ '
 
 # ── bashrc / zshrc ───────────────────────────────────────────────────────────
 
+# Strip a single top-level `if … fi` block that starts with a matching comment header.
+remove_if_fi_block() {
+    local rc="$1" header_re="$2"
+    [[ -f "$rc" ]] || return 0
+    awk -v re="$header_re" '
+        $0 ~ re { skip=1; depth=0; next }
+        skip {
+            if ($0 ~ /^[[:space:]]*if / || $0 ~ /^if /) depth++
+            if ($0 ~ /^[[:space:]]*fi[[:space:]]*$/ || $0 ~ /^fi[[:space:]]*$/) {
+                if (depth > 0) { depth--; next }
+                skip=0; next
+            }
+            next
+        }
+        { print }
+    ' "$rc" > "$rc.cleanup.tmp" && mv "$rc.cleanup.tmp" "$rc"
+}
+
+remove_user_tmp_block() {
+    remove_if_fi_block "$1" '^# Per-user temp'
+}
+
+remove_aliases_block() {
+    local rc="$1"
+    [[ -f "$rc" ]] || return 0
+    awk '
+        /^# aliases/ { skip=1; next }
+        skip && /^# [A-Za-z]/ { skip=0; print; next }
+        skip { next }
+        { print }
+    ' "$rc" > "$rc.aliases.tmp" && mv "$rc.aliases.tmp" "$rc"
+}
+
+remove_zellij_wrapper_block() {
+    local rc="$1"
+    [[ -f "$rc" ]] || return 0
+    awk '
+        /^# zellij wrapper/ { skip=1; depth=0; next }
+        skip {
+            if ($0 ~ /^[[:space:]]*if / || $0 ~ /^if /) depth++
+            if ($0 ~ /^[[:space:]]*fi[[:space:]]*$/ || $0 ~ /^fi[[:space:]]*$/) {
+                if (depth > 0) { depth--; next }
+                skip=0; next
+            }
+            next
+        }
+        { print }
+    ' "$rc" > "$rc.wrapper.tmp" && mv "$rc.wrapper.tmp" "$rc"
+}
+
 remove_znuke_function() {
     local rc="$1"
     [[ -f "$rc" ]] || return 0
     grep -q '^znuke()' "$rc" || return 0
-    # Strip the comment header (lines starting with `# znuke` until a blank line)
-    # and the function body (`znuke() { ... }` ending with a `}` at column 0).
     awk '
         /^# znuke:/ { in_hdr=1; next }
         in_hdr && /^[[:space:]]*$/ { in_hdr=0; next }
@@ -263,15 +338,48 @@ remove_znuke_function() {
     ' "$rc" > "$rc.znuke.tmp" && mv "$rc.znuke.tmp" "$rc"
 }
 
+purge_zellij_from_rc() {
+    local rc="$1"
+    [[ -f "$rc" ]] || return 0
+    grep -qiE 'zellij|znuke|ZELLIJ' "$rc" || return 0
+    echo "Removing zellij from $rc"
+    remove_zellij_wrapper_block "$rc"
+    remove_if_fi_block "$rc" '^# zellij MSI install'
+    remove_if_fi_block "$rc" '^# zellij config dir'
+    remove_user_tmp_block "$rc"
+    remove_if_fi_block "$rc" '^# Shared temp for zellij'
+    remove_if_fi_block "$rc" '^# Shared zellij session'
+    remove_aliases_block "$rc"
+    remove_znuke_function "$rc"
+}
+
+sync_extra_windows_profiles() {
+    if ! is_windows; then return 0; fi
+    local win_home_rc="$1" f
+    for f in /c/Users/*/.bashrc; do
+        [[ -f "$f" ]] || continue
+        [[ "$f" == "$win_home_rc" ]] && continue
+        add_to_rc "$f"
+    done
+}
+
 add_to_rc() {
     local rc="$1"
     [[ ! -f "$rc" ]] && touch "$rc"
 
     remove_znuke_function "$rc"
+    if ! grep -q '^z()' "$rc" 2>/dev/null; then
+        remove_aliases_block "$rc"
+    elif grep -q "alias z='zellij'" "$rc" 2>/dev/null; then
+        sed -i "/alias z='zellij'/d" "$rc"
+    fi
 
     ensure_snippet "$rc" "cargo PATH"       '_cargo_bin'     "$CARGO_PATH_SNIPPET"
     ensure_snippet "$rc" "opencode PATH"    '\.opencode/bin' "$OPENCODE_SNIPPET"
+    ensure_snippet "$rc" "per-user TMP"     '_user_tmp='     "$USER_TMP_SNIPPET"
+    ensure_snippet "$rc" "zellij PATH"      '_zellij_bin='   "$ZELLIJ_PATH_SNIPPET"
     ensure_snippet "$rc" "zellij config"    'ZELLIJ_CONFIG_DIR' "$ZELLIJ_SNIPPET"
+    ensure_snippet "$rc" "zellij wrapper"   '^z()'           "$ZELLIJ_WRAPPER_SNIPPET"
     ensure_snippet "$rc" "aliases"          'alias l='       "$ALIASES_SNIPPET"
     ensure_snippet "$rc" "fnm"              'fnm env'        "$FNM_SNIPPET"
     ensure_snippet "$rc" "fzf"              'fzf --bash'     "$FZF_SNIPPET"
@@ -297,6 +405,49 @@ setup_bash() {
         echo "Added .bashrc source to $bp"
     else
         echo ".bash_profile already sources .bashrc"
+    fi
+}
+
+# ── zellij ───────────────────────────────────────────────────────────────────
+
+ZELLIJ_MSI_URL='https://github.com/zellij-org/zellij/releases/download/v0.44.3/zellij-x86_64-pc-windows-msvc-installer.msi'
+
+install_zellij() {
+    if ! is_windows; then
+        command -v zellij &>/dev/null && echo "zellij already in PATH" && return
+        echo "zellij not found — install via your distro package manager"
+        return
+    fi
+
+    local zellij_exe
+    zellij_exe="$(cygpath -u "$LOCALAPPDATA")/Zellij/zellij.exe"
+    if [[ -x "$zellij_exe" ]]; then
+        echo "zellij already installed at $zellij_exe ($("$zellij_exe" --version))"
+        return
+    fi
+
+    if ! command -v curl &>/dev/null; then
+        echo "zellij not found — need curl to download the Windows MSI"
+        return
+    fi
+
+    local tmpdir msi win_msi
+    tmpdir="$(mktemp -d)"
+    trap 'rm -rf "$tmpdir"' RETURN
+    msi="$tmpdir/zellij-installer.msi"
+    echo "Installing zellij 0.44.3 MSI..."
+    curl -fsSLo "$msi" "$ZELLIJ_MSI_URL"
+    win_msi="$(cygpath -w "$msi")"
+    msiexec //i "$win_msi" //quiet //norestart
+    local i
+    for i in $(seq 1 30); do
+        [[ -x "$zellij_exe" ]] && break
+        sleep 1
+    done
+    if [[ -x "$zellij_exe" ]]; then
+        echo "Installed zellij $("$zellij_exe" --version)"
+    else
+        echo "zellij MSI install may still be running — restart shell and re-run init.sh"
     fi
 }
 
@@ -413,9 +564,72 @@ upgrade_opencode() {
     "$bin" upgrade
 }
 
+# ── zellij uninstall ──────────────────────────────────────────────────────────
+
+uninstall_zellij_data() {
+    local base
+    for base in "${@:-}"; do
+        [[ -z "$base" ]] && continue
+        rm -rf "$base/AppData/Local/Zellij" "$base/AppData/Local/Zellij Contributors" 2>/dev/null
+        rm -rf "$base/.config/zellij" 2>/dev/null
+        rm -f "$base/.local/bin/z-nuke" 2>/dev/null
+        rm -rf "$base/.cache/zellij" "$base/.local/share/zellij" "$base/.local/state/zellij" 2>/dev/null
+        rm -f "$base/.cargo/bin/zellij" 2>/dev/null
+    done
+}
+
+uninstall_zellij() {
+    echo "=== Uninstalling zellij ==="
+    pkill -9 zellij 2>/dev/null || true
+
+    if is_windows && command -v powershell.exe &>/dev/null; then
+        powershell.exe -NoProfile -Command \
+            "Get-Package -Name 'Zellij' -ErrorAction SilentlyContinue | Uninstall-Package -Force" \
+            2>/dev/null || true
+        powershell.exe -NoProfile -Command \
+            'foreach ($scope in "User","Machine") { $p = [Environment]::GetEnvironmentVariable("Path", $scope); if ($p -and $p -match "Zellij") { $np = ($p -split ";" | Where-Object { $_ -notmatch "Zellij" }) -join ";"; [Environment]::SetEnvironmentVariable("Path", $np, $scope) } }' \
+            2>/dev/null || true
+    fi
+
+    local homes=("$HOME")
+    is_windows && homes+=("$(win_home)")
+    for h in /c/Users/*/; do
+        [[ -r "$h" && -f "${h}.bashrc" ]] && homes+=("${h%/}")
+    done
+    local seen=" " h
+    for h in "${homes[@]}"; do
+        [[ -z "$h" || "$seen" == *" $h "* ]] && continue
+        seen+=" $h "
+        uninstall_zellij_data "$h"
+        purge_zellij_from_rc "$h/.bashrc"
+        [[ -f "$h/.zshrc" ]] && purge_zellij_from_rc "$h/.zshrc"
+    done
+
+    rm -rf "$SCRIPT_DIR/.zellij-shared" /tmp/zellij /c/msys64/tmp/zellij 2>/dev/null
+    for t in /c/Users/*/AppData/Local/Temp/zellij; do
+        [[ -e "$t" || -L "$t" ]] && rm -rf "$t"
+    done
+
+    # Re-apply non-zellij shell snippets after purge.
+    setup_bash "$HOME"
+    if is_windows; then
+        local wh; wh="$(win_home)"
+        [[ "$wh" != "$HOME" ]] && setup_bash "$wh"
+        sync_extra_windows_profiles "$wh/.bashrc"
+    fi
+
+    echo "Zellij removed. Restart your shell or run: source ~/.bashrc"
+}
+
 # ── main ─────────────────────────────────────────────────────────────────────
 
+if [[ "${1:-}" == "--uninstall-zellij" ]]; then
+    uninstall_zellij
+    exit 0
+fi
+
 is_windows && install_msys2_packages
+is_windows && install_zellij
 
 setup_bash "$HOME"
 
@@ -425,6 +639,7 @@ if is_windows; then
         echo "--- Windows home ($WIN_HOME) differs from MSYS2 home ($HOME) ---"
         setup_bash "$WIN_HOME"
     fi
+    sync_extra_windows_profiles "$WIN_HOME/.bashrc"
 fi
 
 # symlinks
@@ -438,14 +653,18 @@ else
     link_config "$SCRIPT_DIR/wezterm.lua" "$HOME/.wezterm.lua" "wezterm"
     link_config "$NVIM_CONFIG_SRC"      "$HOME/.config/nvim" "nvim"
 fi
-link_config "$SCRIPT_DIR/config.kdl" "$HOME/.config/zellij/config.kdl" "zellij"
+if is_windows; then
+    link_config "$SCRIPT_DIR/config.kdl" "$(win_home)/.config/zellij/config.kdl" "zellij"
+else
+    link_config "$SCRIPT_DIR/config.kdl" "$HOME/.config/zellij/config.kdl" "zellij"
+fi
 
-# Install z-nuke (aggressive Zellij zombie cleaner)
-# Companion to the gentler `znuke` shell function.
-# Use `z-nuke` only when normal cleanup fails.
 if [[ -f "$SCRIPT_DIR/z-nuke" ]]; then
-    cp "$SCRIPT_DIR/z-nuke" ~/.local/bin/z-nuke
-    chmod +x ~/.local/bin/z-nuke
+    local_bin=
+    if is_windows; then local_bin="$(win_home)/.local/bin"; else local_bin="$HOME/.local/bin"; fi
+    mkdir -p "$local_bin"
+    cp "$SCRIPT_DIR/z-nuke" "$local_bin/z-nuke"
+    chmod +x "$local_bin/z-nuke"
     echo "Installed z-nuke (aggressive Zellij zombie cleaner)"
 fi
 

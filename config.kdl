@@ -321,6 +321,10 @@ theme "tokyo-night"
 // Default: "default"
 // 
 default_layout "compact"
+
+// One session per profile — attach if running, create if not
+session_name "one"
+attach_to_session true
  
 // The folder in which Zellij will look for layouts
 // (Requires restart)
@@ -531,11 +535,11 @@ show_startup_tips false
  
 // Whether to enable mouse hover effects and pane grouping functionality
 // default is true
-// advanced_mouse_actions false
+advanced_mouse_actions false
  
 // Whether to enable mouse hover visual effects (frame highlight and help text)
 // default is true
-// mouse_hover_effects false
+mouse_hover_effects false
  
 // Whether to show visual bell indicators (pane/tab frame flash and [!] suffix)
 // default is true
