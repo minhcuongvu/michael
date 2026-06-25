@@ -5,7 +5,8 @@ Personal dotfiles and shell environment setup for Windows (MSYS2/UCRT64) and Lin
 ## Prerequisites
 
 - **Windows:** [MSYS2](https://www.msys2.org/) (UCRT64), [WezTerm](https://wezfurlong.org/wezterm/)
-- **Tools:** Rust/cargo (`zellij`, `fnm`), opencode, external [cloud-nvim](https://github.com/) repo at `/c/dev/cloud-nvim` (Windows) or `~/cloud-nvim` (Linux)
+- **Tools:** Rust/cargo (`fnm`), opencode, external **cloud-nvim** repo at `/c/dev/cloud-nvim` (Windows) or `~/cloud-nvim` (Linux)
+- **Zellij (Windows):** installed by `init.sh` via MSI to `%LOCALAPPDATA%/Zellij` — not Cargo
 - **Optional:** Grok CLI, Forgejo MCP server (`C:/dev/forgejo-mcp/forgejo-mcp-server.exe`), Tailscale
 
 ## Quick Start
@@ -23,7 +24,8 @@ Restart your shell or open a new WezTerm tab.
 
 | Path | Purpose |
 |------|---------|
-| `init.sh` | Bootstrap — shell config, symlinks, MSYS2 packages, nvim patches |
+| `init.sh` | Bootstrap orchestrator — sources `lib/*.sh` modules |
+| `lib/` | Modular setup: shell snippets, tools, symlinks, uninstall |
 | `wezterm.lua` | WezTerm config (font, padding, MSYS2/UCRT64 shell) |
 | `config.kdl` | Zellij multiplexer (tokyo-night theme, compact layout) |
 | `z-nuke` | Aggressive Zellij zombie session cleaner (installed to `~/.local/bin`) |
@@ -36,31 +38,35 @@ Restart your shell or open a new WezTerm tab.
 ## What `init.sh` Does
 
 1. **MSYS2 packages** (Windows) — installs `ripgrep`, `jq`, `fzf`, `git-subtree` via UCRT64 pacman if missing
-2. **PATH setup** — adds tool dirs MSYS2's minimal PATH omits:
+2. **Zellij** (Windows) — downloads and installs MSI v0.44.3 to `%LOCALAPPDATA%/Zellij`
+3. **PATH setup** — adds tool dirs MSYS2's minimal PATH omits:
    - Cargo (`~/.cargo/bin`)
    - opencode (`~/.opencode/bin`)
    - Azure CLI, Tailscale (Windows only)
-3. **Shell tools** — fnm (Node), fzf (fuzzy finder + key bindings)
-4. **Aliases** — `z` → `zellij`, `l` → `ls`, `make` → `mingw32-make` (Windows)
-5. **Git** — branch/dirty prompt; unaliases Git-for-Windows `git.exe` so MSYS2 git is used
-6. **Forgejo env** — sources `~/.config/forgejo/env` if present (for MCP token)
-7. **ping wrapper** — maps `ping -c` to `ping -n` on Windows
-8. **znuke** — shell function for gentle Zellij session cleanup
-9. **Login shell fix** — ensures `.bash_profile` sources `.bashrc`
-10. **Dual-home handling** — writes config to both MSYS2 home and Windows home (`CHERE_INVOKING=1`)
-11. **Symlinks** — `wezterm.lua`, `config.kdl`, external nvim config
-12. **z-nuke** — copies aggressive Zellij cleaner to `~/.local/bin`
-13. **Neovim** — links cloud-nvim config; patches neo-tree.nvim on Windows
-14. **opencode** — attempts `skill.md` symlink (legacy); runs `opencode upgrade`
+4. **Shell tools** — fnm (Node), fzf (fuzzy finder + key bindings)
+5. **Zellij shell integration** — `z()` function: no args → `zellij attach -c one`; with args → `zellij "$@"`; plus `znuke` cleanup function
+6. **Aliases** — `l` → `ls`, `make` → `mingw32-make` (Windows); zellij tab completion for `z`
+7. **Git** — branch/dirty prompt; unaliases Git-for-Windows `git.exe` so MSYS2 git is used; `GIT_AI_COMMIT=1` + `prepare-commit-msg` hook
+8. **Forgejo env** — sources `~/.config/forgejo/env` if present (for MCP token)
+9. **ping wrapper** — maps `ping -c` to `ping -n` on Windows
+10. **Login shell fix** — ensures `.bash_profile` sources `.bashrc`
+11. **Dual-home handling** — writes config to both MSYS2 home and Windows home (`CHERE_INVOKING=1`)
+12. **Symlinks** — `wezterm.lua`, `config.kdl`, external nvim config
+13. **z-nuke** — copies aggressive Zellij cleaner to `~/.local/bin`
+14. **Neovim** — links cloud-nvim config; patches neo-tree.nvim on Windows
+15. **opencode** — symlinks `skills/michael-environment/SKILL.md`; runs `opencode upgrade`
+
+Flags: `--dry-run` (preview changes), `--uninstall-zellij` (remove Zellij; incompatible with `--dry-run`)
 
 ## WezTerm Config
 
-- Shell: MSYS2 bash (`C:/msys64/usr/bin/bash.exe --login`)
-- Environment: `MSYSTEM=UCRT64`, `CHERE_INVOKING=1`, `MSYS2_PATH_TYPE=inherit`
-- `MSYS2_PATH_TYPE=inherit` preserves the full Windows system PATH inside MSYS2
+- Shell: `msys2_shell.cmd -ucrt64 -use-full-path -shell bash` (see `wezterm.lua`)
+- `-use-full-path` preserves the full Windows system PATH inside MSYS2 (Tailscale CLI, user tools, etc.)
+- Environment: `MSYSTEM=UCRT64`, `CHERE_INVOKING=1`
 
 ## Zellij Config
 
+- Session: `z` (no args) attaches to shared session `one` per Windows profile
 - Theme: tokyo-night · Layout: compact
 - Leader-key keybinds with vim-style navigation (h/j/k/l)
 - tmux compatibility mode (`Ctrl+b`)
@@ -85,15 +91,13 @@ Skills live in `skills/` and follow the standard `SKILL.md` format:
 
 ### Installing Skills
 
-**opencode** — copy all skills:
+**opencode** — `init.sh` symlinks only `michael-environment`. To sync all skills:
 
 ```bash
 bash copy_to_opencode_windows.sh
 ```
 
 **Grok / Claude Code** — skills are loaded from their respective config directories. For Grok project-scoped skills, place or symlink into `~/.grok/skills/` or the project's skill path.
-
-> **Note:** `init.sh` still symlinks a legacy `skill.md` if present. Use `copy_to_opencode_windows.sh` for the current `skills/` directory.
 
 ## Grok MCP (Forgejo)
 

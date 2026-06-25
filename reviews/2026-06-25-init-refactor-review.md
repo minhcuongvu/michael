@@ -62,4 +62,16 @@ The refactor cleanly splits `init.sh` into `lib/{config,helpers,setup-shell,setu
 - File: lib/config.sh:6
 - Description: `MICHAEL_REPO`, `FORGEJO_MCP_PATH`, and `FORGEJO_URL` are defined but unused by the lib scripts (`REPO_DIR` is derived from `lib/` parent instead).
 - Suggestion: Wire them in where intended, or remove/document as external-only overrides.
+- Status: fixed (`MICHAEL_REPO` wired via `REPO_DIR`; Forgejo vars documented as external-only)
+
+## Post-review fixes (bee04ab)
+
+### Issue 11 -- Severity: bug
+- File: lib/setup-shell.sh:192
+- Description: `PING_WRAPPER_SNIPPET` closed its `if` block with `}` instead of `fi`, causing `syntax error near unexpected token '}'` on `source ~/.bashrc`.
 - Status: fixed
+
+### Issue 12 -- Severity: bug
+- File: lib/setup-shell.sh:245
+- Description: `ensure_snippet` grep pattern `'^z()'` did not match existing `z() {` blocks, so re-running `init.sh` appended duplicate `z()` functions.
+- Status: fixed (pattern changed to `'z() {'`)

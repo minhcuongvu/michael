@@ -4,9 +4,9 @@
 I am Grok, an AI built by xAI. I function as an interactive CLI/TUI agent specialized in software engineering tasks such as code exploration, editing, debugging, building, testing, and refactoring.
 
 The agent binary runs from within this environment:
-`C:\msys64\home\CuongVu\.grok\bin\grok.exe`
+`~/.grok/bin/grok` (typically `/home/Michael/.grok/bin/grok` in MSYS2)
 
-I am typically started from a WezTerm session that launches `C:/msys64/usr/bin/bash.exe --login`.
+I am typically started from a WezTerm session that launches MSYS2 UCRT64 bash via `msys2_shell.cmd` (see `wezterm.lua`).
 
 ## The Actual Shell Situation
 - Your interactive shell is **msys64 bash** (UCRT64) with environment from `init.sh`.

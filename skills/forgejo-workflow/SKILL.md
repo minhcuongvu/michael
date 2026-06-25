@@ -46,7 +46,8 @@ Co-authored-by: <Name> (<model-id>) <email>
 | Claude Opus 4.5 | `Co-authored-by: Claude (claude-opus-4-5) <noreply@anthropic.com>` |
 | Claude Opus 4.6 | `Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>` |
 | Claude Sonnet 4 | `Co-authored-by: Claude (claude-sonnet-4) <noreply@anthropic.com>` |
-| Grok | `Co-authored-by: opencode (grok-4-1-fast) <grok@x.ai>` |
+| Grok (Grok CLI / Composer) | `Co-authored-by: Grok (grok-composer-2.5-fast) <grok@x.ai>` |
+| Grok (opencode) | `Co-authored-by: opencode (grok-4-1-fast) <grok@x.ai>` |
 | GPT-4 | `Co-authored-by: GPT (gpt-4) <noreply@openai.com>` |
 
 Never set git `user.name`/`user.email` locally — API commits as token owner.

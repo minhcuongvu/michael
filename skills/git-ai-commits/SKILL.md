@@ -27,7 +27,8 @@ Co-authored-by: Claude (claude-opus-4-5) <noreply@anthropic.com>"
 |-------|----------------|
 | Claude Opus | `Claude (claude-opus-4-5) <noreply@anthropic.com>` |
 | Claude Sonnet | `Claude (claude-sonnet-4) <noreply@anthropic.com>` |
-| Grok | `opencode (grok-4-1-fast) <grok@x.ai>` |
+| Grok (Grok CLI / Composer) | `Grok (grok-composer-2.5-fast) <grok@x.ai>` |
+| Grok (opencode) | `opencode (grok-4-1-fast) <grok@x.ai>` |
 | GPT-4 | `GPT (gpt-4) <noreply@openai.com>` |
 
 ## Why

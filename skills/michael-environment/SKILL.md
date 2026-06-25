@@ -23,13 +23,15 @@ Windows dev environment: **MSYS2 UCRT64 bash** via WezTerm — not CMD/PowerShel
 
 ## Tools
 
-**Cargo (`~/.cargo/bin`):** `zellij`, `fnm`, `cargo`, `rustc`, `rustfmt`, `clippy`
+**Cargo (`~/.cargo/bin`):** `fnm`, `cargo`, `rustc`, `rustfmt`, `clippy`
+
+**Zellij (Windows):** `%LOCALAPPDATA%/Zellij/zellij.exe` — installed by `init.sh` MSI, not Cargo
 
 **Claude Code (`~/.local/bin`):** `claude`
 
 **UCRT64 (`/c/msys64/ucrt64/bin`):** `nvim`, `rg`, `jq`, `fzf`, `gcc`/`g++` (v15.2, CGO-enabled), `mingw32-make`, `git`, `node`/`npm`, `python3`, `cmake`, `ninja`
 
-**Aliases:** `z`→`zellij`, `l`→`ls`, `make`→`mingw32-make`
+**Shell helpers:** `z()` attaches to Zellij session `one` (no args) or passes through to `zellij`; `znuke` clears sessions; `l`→`ls`, `make`→`mingw32-make`
 
 ## Path Rules
 
@@ -40,11 +42,15 @@ Windows dev environment: **MSYS2 UCRT64 bash** via WezTerm — not CMD/PowerShel
 
 Use UCRT64 git (`which git` → `/c/msys64/ucrt64/bin/git`). Prompt shows branch + ` *` when dirty.
 
+`GIT_AI_COMMIT=1` auto-appends `Co-authored-by` via `prepare-commit-msg` hook. See `skills/git-ai-commits/SKILL.md` for attribution rules.
+
 ## Node
 
 `fnm` manages versions. Default: v24 (`.node-version`). `fnm list` / `fnm use 20` / `fnm install 22`
 
 ## Zellij
+
+Run `z` (no args) to attach/create session `one`. `znuke` for gentle cleanup; `z-nuke` for nuclear reset.
 
 `Ctrl+g` lock · `Ctrl+t` tab · `Ctrl+p` pane · `Ctrl+n` resize · `Ctrl+s` scroll · `Ctrl+b` tmux mode
 
@@ -78,6 +84,8 @@ Search: `pacman -Ss <term>`
 | Git wrong paths | Use `/c/msys64/ucrt64/bin/git` |
 | Path conversion | `cygpath -w` (Unix→Win), `cygpath -u` (Win→Unix) |
 | Broken env | `cd /c/Dev/michael && bash init.sh && source ~/.bashrc` |
+| `ping -c` fails on Windows | Use `ping -c` anyway — bash wrapper maps to `-n` |
+| Duplicate `z()` in `.bashrc` | Re-run `bash init.sh` (dedup pattern fixed) or remove extras manually |
 
 ## NordVPN + Tailscale + Forgejo
 

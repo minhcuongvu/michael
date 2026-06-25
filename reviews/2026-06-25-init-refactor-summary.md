@@ -15,3 +15,8 @@
 - [bug] lib/uninstall.sh:21 -- uninstall ignores --dry-run entirely
 
 See the full review at: reviews/2026-06-25-init-refactor-review.md
+
+## Post-review fixes (bee04ab)
+
+- **ping wrapper** — `PING_WRAPPER_SNIPPET` closed `if` with `}` instead of `fi`, breaking `source ~/.bashrc`
+- **zellij wrapper dedup** — `ensure_snippet` pattern `'^z()'` failed to match `z() {`, causing duplicate `z()` blocks on re-run; fixed to `'z() {'`
