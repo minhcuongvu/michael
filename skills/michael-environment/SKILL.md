@@ -105,3 +105,7 @@ GIT_TRACE=1 git fetch upstream
 ## Neovim
 
 External config repo; `init.sh` symlinks to `~/AppData/Local/nvim`. If missing: run `bash init.sh`.
+
+## Grok-specific Notes
+
+If you are Grok, see [`grok.md`](../../grok.md) for terminal command wrapping rules (pwsh → bash bridge) and process tree specifics.

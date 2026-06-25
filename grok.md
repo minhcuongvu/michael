@@ -50,21 +50,15 @@ To execute in **your actual msys64 environment**, every `run_terminal_command` m
 
 I will use the wrapper automatically for all future terminal work in this environment.
 
-## Path Handling
-Inside wrapped bash commands: always use Unix-style paths:
-- `/c/dev/michael`
-- `/c/dev/repo/ciecore`
-- `/c/dev/repo/cieportable`
+## General Environment Info
 
-Use `cygpath -w` / `cygpath -u` only when a native Windows tool strictly requires Windows paths.
+For paths, tools, aliases, packages, and troubleshooting, see [`skills/michael-environment/SKILL.md`](skills/michael-environment/SKILL.md).
 
 ## Recommended Workflow
+
 - **File reading / searching / editing**: Prefer the agent's built-in tools (`read_file`, `grep` (with `path=` parameter), `list_dir`, `search_replace`). These bypass the shell and are reliable.
 - **Execution** (builds, tests, external repo exploration, git in msys style): Use the bash wrapper above.
 - **External repos** (ciecore, cieportable): Use full `/c/dev/repo/...` paths inside the wrapper. The agent's `grep` tool can also target these paths directly when possible.
-- **Re-initializing the environment**: Run `bash /c/dev/michael/init.sh` then `source ~/.bashrc` if PATH, aliases, or tools seem off.
-- **Packages**: Install UCRT64 versions via `pacman -S mingw-w64-ucrt-x86_64-<pkg>`.
-- **Aliases** (after init.sh): `z` for zellij, `l` for ls, `make` → `mingw32-make`.
 
 ## Other Notes
 - The process tree is typically: WezTerm → bash --login (msys) → grok.exe → pwsh.exe (for raw terminal tool calls). The wrapper compensates for the last hop.

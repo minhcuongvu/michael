@@ -5,8 +5,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/helpers.sh"
+
 SOURCE_DIR="$SCRIPT_DIR/skills"
-DEST_DIR="/c/Users/Michael/.config/opencode/skills"
+if is_windows; then
+    DEST_DIR="$(win_home)/.config/opencode/skills"
+else
+    DEST_DIR="$HOME/.config/opencode/skills"
+fi
 
 if [[ ! -d "$SOURCE_DIR" ]]; then
     echo "Error: Source directory $SOURCE_DIR not found"

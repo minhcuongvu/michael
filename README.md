@@ -155,3 +155,9 @@ cd /c/Dev/michael
 bash init.sh
 source ~/.bashrc
 ```
+
+Preview changes without modifying anything:
+
+```bash
+bash init.sh --dry-run
+```
