@@ -56,6 +56,7 @@ fi
 
 is_windows && install_msys2_packages
 is_windows && install_zellij
+install_grok
 
 setup_bash "$HOME"
 setup_git

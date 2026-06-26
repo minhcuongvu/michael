@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# lib/setup-tools.sh — MSYS2 packages and zellij installation
+# lib/setup-tools.sh — MSYS2 packages, zellij, and grok installation
 
 LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 source "$LIB_DIR/config.sh"
@@ -72,4 +72,36 @@ install_zellij() {
     else
         echo "zellij MSI install may still be running — restart shell and re-run init.sh"
     fi
+}
+
+install_grok() {
+    if command -v grok &>/dev/null; then
+        echo "grok already in PATH"
+        return
+    fi
+    if [[ -x "$HOME/.grok/bin/grok" ]]; then
+        echo "grok already installed at $HOME/.grok/bin/grok"
+        return
+    fi
+    if is_windows && [[ -n "${USERPROFILE:-}" ]]; then
+        local win_grok
+        win_grok="$(cygpath -u "$USERPROFILE")/.grok/bin/grok"
+        if [[ -x "$win_grok" ]]; then
+            echo "grok already installed at $win_grok"
+            return
+        fi
+    fi
+
+    if [[ "${DRY_RUN:-0}" == "1" ]]; then
+        echo "[DRY-RUN] would run: curl -fsSL https://x.ai/cli/install.sh | bash"
+        return
+    fi
+
+    if ! command -v curl &>/dev/null; then
+        echo "grok not found — need curl to install"
+        return
+    fi
+
+    echo "Installing grok..."
+    curl -fsSL https://x.ai/cli/install.sh | bash
 }
