@@ -23,6 +23,17 @@ OPENCODE_SNIPPET='
 [[ -d "$HOME/.opencode/bin" ]] && export PATH="$HOME/.opencode/bin:$PATH"
 '
 
+GROK_PATH_SNIPPET='
+# grok CLI
+if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
+    _grok_bin="$(cygpath -u "$USERPROFILE")/.grok/bin"
+else
+    _grok_bin="$HOME/.grok/bin"
+fi
+[[ -d "$_grok_bin" ]] && case ":$PATH:" in *:"$_grok_bin":*) ;; *) export PATH="$_grok_bin:$PATH" ;; esac
+unset _grok_bin
+'
+
 USER_TMP_SNIPPET='
 # Per-user temp (MSYS2 defaults TMP to shared /tmp)
 if [[ -n "${LOCALAPPDATA:-}" && ( -n "$MSYSTEM" || "$OSTYPE" == msys* || -n "${WINDIR:-}" ) ]]; then
@@ -238,6 +249,7 @@ add_to_rc() {
 
     ensure_snippet "$rc" "cargo PATH"       '_cargo_bin'     "$CARGO_PATH_SNIPPET"
     ensure_snippet "$rc" "opencode PATH"    '\.opencode/bin' "$OPENCODE_SNIPPET"
+    ensure_snippet "$rc" "grok PATH"        '_grok_bin='     "$GROK_PATH_SNIPPET"
     ensure_snippet "$rc" "per-user TMP"     '_user_tmp='     "$USER_TMP_SNIPPET"
     if [[ "${SKIP_ZELLIJ:-0}" != "1" ]]; then
         ensure_snippet "$rc" "zellij PATH"      '_zellij_bin='   "$ZELLIJ_PATH_SNIPPET"
