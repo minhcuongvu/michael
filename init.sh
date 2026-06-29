@@ -75,6 +75,7 @@ install_z_nuke
 patch_nvim_plugins
 install_opencode_skill
 upgrade_opencode
+upgrade_grok
 
 if [[ "$DRY_RUN" == "1" ]]; then
     echo "=== DRY RUN complete — no changes were made ==="

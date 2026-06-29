@@ -105,3 +105,30 @@ install_grok() {
     echo "Installing grok..."
     curl -fsSL https://x.ai/cli/install.sh | bash
 }
+
+upgrade_grok() {
+    local bin
+    if command -v grok &>/dev/null; then
+        bin=grok
+    elif [[ -x "$HOME/.grok/bin/grok" ]]; then
+        bin="$HOME/.grok/bin/grok"
+    elif is_windows && [[ -n "${USERPROFILE:-}" ]] && [[ -x "$(cygpath -u "$USERPROFILE")/.grok/bin/grok" ]]; then
+        bin="$(cygpath -u "$USERPROFILE")/.grok/bin/grok"
+    else
+        echo "grok not found — skipping upgrade"
+        return
+    fi
+
+    echo "Upgrading grok ($("$bin" --version 2>/dev/null || echo unknown))..."
+    if [[ "${DRY_RUN:-0}" == "1" ]]; then
+        echo "[DRY-RUN] would run: curl -fsSL https://x.ai/cli/install.sh | bash"
+        return
+    fi
+
+    if ! command -v curl &>/dev/null; then
+        echo "grok upgrade needs curl"
+        return
+    fi
+
+    curl -fsSL https://x.ai/cli/install.sh | bash
+}
