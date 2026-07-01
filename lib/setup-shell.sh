@@ -48,10 +48,15 @@ fi
 '
 
 ZELLIJ_WRAPPER_SNIPPET='
-# zellij wrapper — one session ("one") per Windows profile
+# zellij wrapper — one session ("one") per profile
 z() {
     command -v zellij >/dev/null || { echo "zellij not in PATH"; return 1; }
     if (($# == 0)); then
+        # Stale resurrectable cache blocks attach -c; clear when no live session
+        if ! zellij list-sessions 2>/dev/null | grep -qE '"'"'^one\b'"'"'; then
+            find "$HOME/.cache/zellij" -path '"'"'*/session_info/one'"'"' -type d \
+                -exec rm -rf {} + 2>/dev/null
+        fi
         zellij attach -c one
     else
         zellij "$@"
@@ -80,13 +85,16 @@ fi
 ALIASES_SNIPPET='
 # aliases
 if command -v zellij &>/dev/null; then
-    _zcomp="${TMPDIR:-/tmp}/zellij-completion-${UID:-0}.bash"
-    if zellij setup --generate-completion bash >"$_zcomp" 2>/dev/null; then
+    _zcomp="$HOME/.cache/zellij/completion.bash"
+    mkdir -p "$(dirname "$_zcomp")"
+    if [[ ! -s "$_zcomp" ]]; then
+        timeout 5 zellij setup --generate-completion bash >"$_zcomp" 2>/dev/null || rm -f "$_zcomp"
+    fi
+    if [[ -s "$_zcomp" ]]; then
         # shellcheck disable=SC1090
         source "$_zcomp"
         complete -F _zellij z 2>/dev/null
     fi
-    rm -f "$_zcomp"
     unset _zcomp
 fi
 alias l='"'"'ls'"'"'
@@ -151,8 +159,11 @@ ZNUKE_SNIPPET='
 # znuke: clear all zellij sessions — live, exited, and zombie.
 znuke() {
     command -v zellij >/dev/null || { echo "zellij not in PATH"; return 1; }
-    yes y 2>/dev/null | zellij kill-all-sessions   >/dev/null 2>&1
-    yes y 2>/dev/null | zellij delete-all-sessions >/dev/null 2>&1
+
+    pkill -u "$(id -un)" zellij 2>/dev/null || true
+
+    rm -rf "$HOME/.cache/zellij"/*/session_info/* 2>/dev/null
+    rm -rf "/run/user/$(id -u)/zellij" 2>/dev/null
 
     local _tmp_candidates=("${TMPDIR:-}" "${TMP:-}" "${TEMP:-}" /tmp /c/msys64/tmp)
     if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
@@ -173,12 +184,15 @@ znuke() {
                2>/dev/null
     fi
 
-    local remaining; remaining=$(zellij list-sessions 2>&1)
-    if [[ "$remaining" == *"No active"* || -z "$remaining" ]]; then
-        echo "znuke: all sessions cleared"
-    else
-        echo "znuke: still present:"; echo "$remaining"
+    if pgrep -u "$(id -un)" -x zellij >/dev/null 2>&1; then
+        echo "znuke: zellij process still running"
+        return 1
     fi
+    if find "$HOME/.cache/zellij" -path '*/session_info/*' -mindepth 1 2>/dev/null | grep -q .; then
+        echo "znuke: session cache still present"
+        return 1
+    fi
+    echo "znuke: all sessions cleared"
 }
 '
 
@@ -237,14 +251,9 @@ add_to_rc() {
     [[ ! -f "$rc" ]] && run touch "$rc"
 
     remove_znuke_function "$rc"
+    remove_legacy_zellij_alias "$rc"
     if ! grep -q '^z()' "$rc" 2>/dev/null; then
         remove_aliases_block "$rc"
-    elif grep -q "alias z='zellij'" "$rc" 2>/dev/null; then
-        if [[ "${DRY_RUN:-0}" == "1" ]]; then
-            echo "[DRY-RUN] would remove legacy alias z='zellij' from $rc"
-        else
-            sed -i "/alias z='zellij'/d" "$rc"
-        fi
     fi
 
     ensure_snippet "$rc" "cargo PATH"       '_cargo_bin'     "$CARGO_PATH_SNIPPET"

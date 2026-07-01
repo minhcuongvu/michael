@@ -126,6 +126,21 @@ remove_user_tmp_block() {
     remove_if_fi_block "$1" '^# Per-user temp'
 }
 
+remove_legacy_zellij_alias() {
+    local rc="$1"
+    [[ -f "$rc" ]] || return 0
+    if [[ "${DRY_RUN:-0}" == "1" ]]; then
+        grep -qE 'alias z=.?zellij|zellij setup --generate-completion|complete -F _zellij z' "$rc" 2>/dev/null \
+            && echo "[DRY-RUN] would remove legacy zellij alias/completion lines from $rc"
+        return 0
+    fi
+    sed -i \
+        -e '/alias z=["'\'']zellij["'\'']/d' \
+        -e '/eval "\$(zellij setup --generate-completion bash)"/d' \
+        -e '/^complete -F _zellij z$/d' \
+        "$rc"
+}
+
 remove_aliases_block() {
     local rc="$1"
     [[ -f "$rc" ]] || return 0

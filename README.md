@@ -44,8 +44,8 @@ Restart your shell or open a new WezTerm tab.
    - opencode (`~/.opencode/bin`)
    - Azure CLI, Tailscale (Windows only)
 4. **Shell tools** — fnm (Node), fzf (fuzzy finder + key bindings)
-5. **Zellij shell integration** — `z()` function: no args → `zellij attach -c one`; with args → `zellij "$@"`; plus `znuke` cleanup function
-6. **Aliases** — `l` → `ls`, `make` → `mingw32-make` (Windows); zellij tab completion for `z`
+5. **Zellij shell integration** — `z()` function (no `alias z`): no args → `zellij attach -c one`; with args → `zellij "$@"`; plus `znuke` cleanup function
+6. **Aliases** — `l` → `ls`, `make` → `mingw32-make` (Windows); zellij tab completion for `z` (cached at `~/.cache/zellij/completion.bash`, not regenerated each login)
 7. **Git** — branch/dirty prompt; unaliases Git-for-Windows `git.exe` so MSYS2 git is used; `GIT_AI_COMMIT=1` + `prepare-commit-msg` hook
 8. **Forgejo env** — sources `~/.config/forgejo/env` if present (for MCP token)
 9. **ping wrapper** — maps `ping -c` to `ping -n` on Windows
