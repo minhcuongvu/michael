@@ -14,43 +14,24 @@ Commit, PR, and sync workflow for self-hosted Forgejo via forgejo-mcp.
 
 ## Monorepo + Subtrees
 
-`app1` is a monorepo; components (`frontend1`, `backend1`, etc.) have separate Forgejo repos as subtrees.
-
-**After any commit or merge to a component's default branch, sync locally:**
+`app1` is a monorepo; components (`frontend1`, `backend1`, …) have separate Forgejo repos as subtrees. After **any** commit or merge to a component's default branch, sync locally or the monorepo is stale:
 
 ```bash
 app sync pull <component>    # e.g. app sync pull backend1
-app sync status              # verify
+app sync status             # verify
 ```
-
-Without sync, local monorepo is stale.
 
 ## Setup
 
 - **Forgejo:** `FORGEJO_URL` in `app.yaml`; auth via `FORGEJO_TOKEN` (`write:repository`)
 - **MCP:** `C:/dev/forgejo-mcp/forgejo-mcp-server.exe`; config in `.grok/config.toml`
-- **Credentials:** copy `.grok/forgejo.env.example` → `~/.config/forgejo/env` + `bash init.sh`, or set `FORGEJO_TOKEN` env var
+- **Credentials:** copy `.grok/forgejo.env.example` → `~/.config/forgejo/env` + `bash init.sh`, or set `FORGEJO_TOKEN`
 - **NordVPN:** split-tunnel `forgejo-mcp-server.exe` for Tailscale
-- **Verify:** restart Grok, enable `forgejo` via `/mcps`, run `grok mcp doctor forgejo` (expect 18 tools)
+- **Verify:** restart Grok, enable `forgejo` via `/mcps`, `grok mcp doctor forgejo` (expect 18 tools)
 
 ## AI Attribution
 
-Know your model. Never impersonate another AI. Include in **every** commit message and PR body:
-
-```
-Co-authored-by: <Name> (<model-id>) <email>
-```
-
-| Model | Trailer |
-|-------|---------|
-| Claude Opus 4.5 | `Co-authored-by: Claude (claude-opus-4-5) <noreply@anthropic.com>` |
-| Claude Opus 4.6 | `Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>` |
-| Claude Sonnet 4 | `Co-authored-by: Claude (claude-sonnet-4) <noreply@anthropic.com>` |
-| Grok (Grok CLI / Composer) | `Co-authored-by: Grok (grok-composer-2.5-fast) <grok@x.ai>` |
-| Grok (opencode) | `Co-authored-by: opencode (grok-4-1-fast) <grok@x.ai>` |
-| GPT-4 | `Co-authored-by: GPT (gpt-4) <noreply@openai.com>` |
-
-Never set git `user.name`/`user.email` locally — API commits as token owner.
+Include a `Co-authored-by` trailer with your **real** model in every commit message and PR body — never impersonate another AI. Full model→trailer table in [`git-ai-commits`](../git-ai-commits/SKILL.md). Never set local git `user.name`/`user.email` — API commits as the token owner.
 
 ## MCP Tools
 
@@ -61,20 +42,14 @@ Never set git `user.name`/`user.email` locally — API commits as token owner.
 ## PR Workflow
 
 1. **Read state** — `get_repo`, `list_branches`, `get_file` (save SHAs)
-2. **Branch** — `create_branch` with prefix: `feat/`, `fix/`, `docs/`, `refactor/`, `chore/`
-3. **Commit** — `create_or_update_file` per file; include `sha` for updates, Co-authored-by in message
-4. **PR** — `create_pull_request` with Co-authored-by in body
+2. **Branch** — `create_branch`, prefix `feat/`|`fix/`|`docs/`|`refactor/`|`chore/`
+3. **Commit** — `create_or_update_file` per file; include `sha` for updates + `Co-authored-by`
+4. **PR** — `create_pull_request` with `Co-authored-by` in body
 5. **Review** — `get_pull_request_diff`
-6. **Merge** — `merge_pull_request` with `merge_style: "squash"` — **ask human first**
-7. **Sync** — `app sync pull <component>` (or tell user to run it)
+6. **Merge** — `merge_pull_request` `merge_style: "squash"` — **ask human first**
+7. **Sync** — `app sync pull <component>`
 
-## Direct Commit (No PR)
-
-Target branch directly via `create_or_update_file`. Skips review — prefer PR workflow. Still sync after.
-
-## Delete File
-
-`delete_file` requires `sha` from `get_file`.
+**Direct commit (no PR):** target branch via `create_or_update_file` — skips review, prefer PRs, still sync after. **Delete:** `delete_file` needs `sha` from `get_file`.
 
 ## Common Mistakes
 
@@ -85,8 +60,4 @@ Target branch directly via `create_or_update_file`. Skips review — prefer PR w
 | Missing `branch` arg | Commits to default branch |
 | Forgot sync | `app sync pull <component>` |
 
-## Quick Reference
-
-```
-get_file → create_branch → create_or_update_file → create_pull_request → merge_pull_request → app sync pull
-```
+`get_file → create_branch → create_or_update_file → create_pull_request → merge_pull_request → app sync pull`
