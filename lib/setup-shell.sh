@@ -217,6 +217,30 @@ if [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]]; then
 fi
 '
 
+FRAN_SNIPPET='
+# fran — launch the Franchelsie terminal chat (TUI) from anywhere.
+# Prefers a Python that has textual (3.10 here; `python` may be a newer one
+# without it). Set FRAN_HOME to override the repo location.
+fran() {
+    local home="${FRAN_HOME:-/c/dev/franchelsie}"
+    if [[ ! -d "$home/tui" ]]; then
+        echo "fran: Franchelsie TUI not found at $home (set FRAN_HOME)" >&2
+        return 1
+    fi
+    local py="" cand
+    for cand in python python3 "py -3.13" "py -3.12" "py -3.11" "py -3.10" py; do
+        if $cand -c "import textual" >/dev/null 2>&1; then py="$cand"; break; fi
+    done
+    if [[ -z "$py" ]]; then
+        echo "fran: no Python with textual found. Install the TUI with:" >&2
+        echo "      py -3.10 -m pip install -e \"$home/tui\"" >&2
+        return 1
+    fi
+    # $py may be two words ("py -3.10"); leave it unquoted so it splits.
+    ( cd "$home/tui" && PYTHONUTF8=1 exec $py -m tui "$@" )
+}
+'
+
 GIT_AI_COMMIT_SNIPPET='
 # AI-assisted git commits: auto-append Co-authored-by via prepare-commit-msg hook
 export GIT_AI_COMMIT=1
@@ -275,6 +299,7 @@ add_to_rc() {
     ensure_snippet "$rc" "Tailscale PATH"   "$TAILSCALE_ROOT" "$TAILSCALE_SNIPPET" fixed
     ensure_snippet "$rc" "Forgejo MCP env"  '\.config/forgejo/env' "$FORGEJO_SNIPPET"
     ensure_snippet "$rc" "ping wrapper"     'ping() {'       "$PING_WRAPPER_SNIPPET"
+    ensure_snippet "$rc" "fran launcher"    'fran()'         "$FRAN_SNIPPET"
     ensure_snippet "$rc" "git prompt"       '_git_prompt'    "$GIT_PROMPT_SNIPPET"
     ensure_snippet "$rc" "git AI commits"   'GIT_AI_COMMIT=1' "$GIT_AI_COMMIT_SNIPPET"
 }
