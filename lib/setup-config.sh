@@ -93,6 +93,27 @@ upgrade_opencode() {
     "$bin" upgrade
 }
 
+upgrade_claude() {
+    local bin
+    if command -v claude &>/dev/null; then
+        bin=claude
+    elif [[ -x "$HOME/.local/bin/claude" ]]; then
+        bin="$HOME/.local/bin/claude"
+    elif is_windows && [[ -n "${USERPROFILE:-}" ]] && [[ -x "$(cygpath -u "$USERPROFILE")/.local/bin/claude" ]]; then
+        bin="$(cygpath -u "$USERPROFILE")/.local/bin/claude"
+    else
+        echo "claude not found — skipping upgrade"
+        return
+    fi
+
+    echo "Upgrading claude..."
+    if [[ "${DRY_RUN:-0}" == "1" ]]; then
+        echo "[DRY-RUN] would run: $bin upgrade"
+        return
+    fi
+    "$bin" upgrade
+}
+
 setup_symlinks() {
     local nvim_config_src="$CLOUD_NVIM_REPO"
     local wezterm_src="$REPO_DIR/wezterm.lua"
