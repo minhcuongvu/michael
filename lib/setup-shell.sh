@@ -246,6 +246,18 @@ GIT_AI_COMMIT_SNIPPET='
 export GIT_AI_COMMIT=1
 '
 
+CLAUDE_ALT_SNIPPET='
+# cc2 — run Claude Code as a second, fully isolated account.
+# Separate CLAUDE_CONFIG_DIR = separate auth/history/settings/MCP; same cwd, so
+# both accounts can work the same project folder. First run prompts a login.
+cc2() {
+    command -v claude >/dev/null || { echo "claude not in PATH"; return 1; }
+    local _alt="$HOME/.claude-alt"
+    [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]] && _alt="$(cygpath -u "$USERPROFILE")/.claude-alt"
+    CLAUDE_CONFIG_DIR="$_alt" claude "$@"
+}
+'
+
 GIT_PROMPT_SNIPPET='
 # git prompt (after tool init so PROMPT_COMMAND/PS1 stay final)
 _git_prompt() {
@@ -302,6 +314,7 @@ add_to_rc() {
     ensure_snippet "$rc" "fran launcher"    'fran()'         "$FRAN_SNIPPET"
     ensure_snippet "$rc" "git prompt"       '_git_prompt'    "$GIT_PROMPT_SNIPPET"
     ensure_snippet "$rc" "git AI commits"   'GIT_AI_COMMIT=1' "$GIT_AI_COMMIT_SNIPPET"
+    ensure_snippet "$rc" "claude alt account" 'cc2()'         "$CLAUDE_ALT_SNIPPET"
 }
 
 setup_bash() {

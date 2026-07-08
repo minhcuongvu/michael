@@ -31,6 +31,7 @@ Restart your shell or open a new WezTerm tab.
 | `z-nuke` | Aggressive Zellij zombie session cleaner (installed to `~/.local/bin`) |
 | `skills/` | AI agent skills (see below) |
 | `copy_to_opencode_windows.sh` | Sync skills to `~/.config/opencode/skills/` |
+| `copy_to_grok_windows.sh` | Sync skills to `~/.grok/skills/` |
 | `.grok/` | Grok MCP config templates (Forgejo integration) |
 | `patches/` | Reference patches for nvim plugins |
 | `.node-version` | Default Node version for fnm (v24) |
@@ -97,7 +98,13 @@ Skills live in `skills/` and follow the standard `SKILL.md` format:
 bash copy_to_opencode_windows.sh
 ```
 
-**Grok / Claude Code** — skills are loaded from their respective config directories. For Grok project-scoped skills, place or symlink into `~/.grok/skills/` or the project's skill path.
+**Grok / Claude Code** — skills are loaded from their respective config directories. To sync all skills to Grok:
+
+```bash
+bash copy_to_grok_windows.sh
+```
+
+For project-scoped skills, place or symlink into `~/.grok/skills/` or the project's skill path.
 
 ## Grok MCP (Forgejo)
 
