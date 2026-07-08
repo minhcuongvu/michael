@@ -246,15 +246,27 @@ GIT_AI_COMMIT_SNIPPET='
 export GIT_AI_COMMIT=1
 '
 
-CLAUDE_ALT_SNIPPET='
+CLAUDE_CC2_SNIPPET='
 # cc2 — run Claude Code as a second, fully isolated account.
 # Separate CLAUDE_CONFIG_DIR = separate auth/history/settings/MCP; same cwd, so
 # both accounts can work the same project folder. First run prompts a login.
 cc2() {
     command -v claude >/dev/null || { echo "claude not in PATH"; return 1; }
-    local _alt="$HOME/.claude-alt"
-    [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]] && _alt="$(cygpath -u "$USERPROFILE")/.claude-alt"
-    CLAUDE_CONFIG_DIR="$_alt" claude "$@"
+    local _cc2="$HOME/.claude-cc2"
+    [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]] && _cc2="$(cygpath -u "$USERPROFILE")/.claude-cc2"
+    CLAUDE_CONFIG_DIR="$_cc2" claude "$@"
+}
+'
+
+CLAUDE_CC3_SNIPPET='
+# cc3 — run Claude Code as a third, fully isolated account.
+# Separate CLAUDE_CONFIG_DIR = separate auth/history/settings/MCP; same cwd, so
+# all accounts can work the same project folder. First run prompts a login.
+cc3() {
+    command -v claude >/dev/null || { echo "claude not in PATH"; return 1; }
+    local _cc3="$HOME/.claude-cc3"
+    [[ -n "$MSYSTEM" || "$OSTYPE" == msys* ]] && _cc3="$(cygpath -u "$USERPROFILE")/.claude-cc3"
+    CLAUDE_CONFIG_DIR="$_cc3" claude "$@"
 }
 '
 
@@ -314,7 +326,8 @@ add_to_rc() {
     ensure_snippet "$rc" "fran launcher"    'fran()'         "$FRAN_SNIPPET"
     ensure_snippet "$rc" "git prompt"       '_git_prompt'    "$GIT_PROMPT_SNIPPET"
     ensure_snippet "$rc" "git AI commits"   'GIT_AI_COMMIT=1' "$GIT_AI_COMMIT_SNIPPET"
-    ensure_snippet "$rc" "claude alt account" 'cc2()'         "$CLAUDE_ALT_SNIPPET"
+    ensure_snippet "$rc" "claude cc2 account" 'cc2()'         "$CLAUDE_CC2_SNIPPET"
+    ensure_snippet "$rc" "claude cc3 account" 'cc3()'         "$CLAUDE_CC3_SNIPPET"
 }
 
 setup_bash() {
